@@ -1,0 +1,60 @@
+package com.closing.closing.domain.task.entity;
+
+import com.closing.closing.domain.business.entity.BusinessRegistration;
+import com.closing.closing.global.entity.BaseEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+@Getter
+@Entity
+@Table(name = "tasks")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Task extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "task_id")
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "registration_id", nullable = false)
+    private BusinessRegistration registration;
+
+    @Column(nullable = false)
+    private String title;
+
+    private LocalDate startDate;
+
+    private LocalDate endDate;
+
+    private LocalTime taskTime;
+
+    @Column(nullable = false)
+    private boolean isCompleted = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TaskSource source = TaskSource.MANUAL;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Builder
+    public Task(BusinessRegistration registration, String title, LocalDate startDate,
+                LocalDate endDate, LocalTime taskTime, TaskSource source, String description) {
+        this.registration = registration;
+        this.title = title;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.taskTime = taskTime;
+        this.source = source;
+        this.description = description;
+    }
+
+}
