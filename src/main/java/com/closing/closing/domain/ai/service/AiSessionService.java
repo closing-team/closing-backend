@@ -3,6 +3,8 @@ package com.closing.closing.domain.ai.service;
 import com.closing.closing.domain.ai.dto.AiErrorResponseDto;
 import com.closing.closing.domain.ai.dto.AiGenerateRequestDto;
 import com.closing.closing.domain.ai.dto.AiGenerateResponseDto;
+import com.closing.closing.domain.ai.dto.AiGenerateTaskDto;
+import com.closing.closing.domain.ai.dto.AiGeneratedTaskDto;
 import com.closing.closing.domain.ai.dto.AiMessageDto;
 import com.closing.closing.domain.ai.dto.AiSessionRequestDto;
 import com.closing.closing.domain.ai.dto.AiSessionResponseDto;
@@ -13,6 +15,7 @@ import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +32,7 @@ public class AiSessionService {
 
     private static final String GENERATE_PATH = "/api/ai/generate";
     private static final String USER_ROLE = "user";
+    private static final String AI_ROLE = "ai";
     private static final int INITIAL_TURN_COUNT = 1;
 
     private final WebClient aiWebClient;
@@ -38,21 +42,62 @@ public class AiSessionService {
     public AiSessionResponseDto createSession(AiSessionRequestDto request) {
         validateInitialInput(request.initialInput());
 
-        List<AiMessageDto> messages = List.of(new AiMessageDto(USER_ROLE, request.initialInput()));
-        AiGenerateResponseDto aiResponse = requestGenerate(messages, INITIAL_TURN_COUNT);
+        List<AiMessageDto> messages = new ArrayList<>();
+        messages.add(new AiMessageDto(USER_ROLE, request.initialInput()));
 
+        AiGenerateResponseDto aiResponse = requestGenerate(messages, INITIAL_TURN_COUNT);
         String sessionId = UUID.randomUUID().toString();
+
+        if (aiResponse.isFinal()) {
+            return saveGeneratedSession(sessionId, messages, aiResponse.tasks());
+        }
+        return saveNewSession(sessionId, messages, aiResponse.aiMessage());
+    }
+
+    private AiSessionResponseDto saveNewSession(String sessionId, List<AiMessageDto> messages, String aiMessage) {
+        List<AiMessageDto> updatedMessages = new ArrayList<>(messages);
+        updatedMessages.add(new AiMessageDto(AI_ROLE, aiMessage));
+
         AiSession aiSession =
                 AiSession.builder()
                         .sessionId(sessionId)
                         .status(AiSessionStatus.NEW)
-                        .messages(serializeMessages(messages))
+                        .messages(serialize(updatedMessages))
                         .turnCount(INITIAL_TURN_COUNT)
                         .build();
         aiSessionRepository.save(aiSession);
 
         return new AiSessionResponseDto(
-                sessionId, AiSessionStatus.NEW.name(), aiResponse.aiMessage(), INITIAL_TURN_COUNT);
+                sessionId, AiSessionStatus.NEW.name(), aiMessage, INITIAL_TURN_COUNT, null);
+    }
+
+    private AiSessionResponseDto saveGeneratedSession(
+            String sessionId, List<AiMessageDto> messages, List<AiGenerateTaskDto> tasks) {
+        List<AiGeneratedTaskDto> generatedTasks = tasks.stream().map(this::assignTempId).toList();
+
+        AiSession aiSession =
+                AiSession.builder()
+                        .sessionId(sessionId)
+                        .status(AiSessionStatus.GENERATED)
+                        .messages(serialize(messages))
+                        .turnCount(INITIAL_TURN_COUNT)
+                        .generatedTasks(serialize(generatedTasks))
+                        .build();
+        aiSessionRepository.save(aiSession);
+
+        return new AiSessionResponseDto(
+                sessionId, AiSessionStatus.GENERATED.name(), null, INITIAL_TURN_COUNT, generatedTasks);
+    }
+
+    private AiGeneratedTaskDto assignTempId(AiGenerateTaskDto task) {
+        return new AiGeneratedTaskDto(
+                UUID.randomUUID().toString(),
+                task.title(),
+                task.startDate(),
+                task.startTime(),
+                task.endDate(),
+                task.endTime(),
+                task.memo());
     }
 
     private void validateInitialInput(String initialInput) {
@@ -89,9 +134,9 @@ public class AiSessionService {
         };
     }
 
-    private String serializeMessages(List<AiMessageDto> messages) {
+    private String serialize(Object value) {
         try {
-            return objectMapper.writeValueAsString(messages);
+            return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }

@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS ai_sessions (
     status VARCHAR(255) NOT NULL,
     messages TEXT NOT NULL,
     turn_count INTEGER NOT NULL,
+    generated_tasks TEXT,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );

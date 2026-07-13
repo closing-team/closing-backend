@@ -33,11 +33,17 @@ public class AiSession extends BaseEntity {
     @Column(nullable = false)
     private int turnCount;
 
+    // AiGeneratedTaskDto 리스트를 JSON 직렬화한 문자열 (status가 GENERATED일 때만 존재)
+    @Column(columnDefinition = "TEXT")
+    private String generatedTasks;
+
     @Builder
-    public AiSession(String sessionId, AiSessionStatus status, String messages, int turnCount) {
+    public AiSession(
+            String sessionId, AiSessionStatus status, String messages, int turnCount, String generatedTasks) {
         this.sessionId = sessionId;
         this.status = status;
         this.messages = messages;
         this.turnCount = turnCount;
+        this.generatedTasks = generatedTasks;
     }
 }
