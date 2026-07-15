@@ -10,7 +10,7 @@ public class TaskReqDTO {
 
     public record CreateTaskDTO(
 
-            @NotBlank(message = "일정/할일 제목이 비어있습니다.")
+            @NotBlank(message = "일정 제목이 비어있습니다.")
             String title,
 
             @NotNull(message = "시작 날짜는 필수입니다.")
