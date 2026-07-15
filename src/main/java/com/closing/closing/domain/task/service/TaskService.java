@@ -30,7 +30,8 @@ public class TaskService {
                 .title(request.title())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
-                .taskTime(request.taskTime())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
                 .source(TaskSource.MANUAL)
                 .description(request.description())
                 .build();

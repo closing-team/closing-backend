@@ -23,7 +23,10 @@ public class TaskResDTO {
             LocalDate endDate,
 
             @JsonFormat(pattern = "HH:mm")
-            LocalTime taskTime,
+            LocalTime startTime,
+
+            @JsonFormat(pattern = "HH:mm")
+            LocalTime endTime,
 
             boolean isCompleted,
             String source,
@@ -37,7 +40,8 @@ public class TaskResDTO {
                     .title(task.getTitle())
                     .startDate(task.getStartDate())
                     .endDate(task.getEndDate())
-                    .taskTime(task.getTaskTime())
+                    .startTime(task.getStartTime())
+                    .endTime(task.getEndTime())
                     .isCompleted(task.isCompleted())
                     .source(task.getSource().name().toLowerCase())
                     .createdAt(task.getCreatedAt().atOffset(ZoneOffset.of("+09:00")))

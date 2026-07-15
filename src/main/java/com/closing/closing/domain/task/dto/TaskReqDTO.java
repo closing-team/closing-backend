@@ -19,7 +19,9 @@ public class TaskReqDTO {
             @NotNull(message = "종료 날짜는 필수입니다.")
             LocalDate endDate,
 
-            LocalTime taskTime,
+            LocalTime startTime,
+
+            LocalTime endTime,
 
             String description
     ) {
