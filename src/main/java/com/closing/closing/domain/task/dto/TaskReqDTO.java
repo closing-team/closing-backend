@@ -26,4 +26,14 @@ public class TaskReqDTO {
             String description
     ) {
     }
+
+    public record UpdateTaskDTO(
+            String title,
+            LocalDate startDate,
+            LocalDate endDate,
+            LocalTime startTime,
+            LocalTime endTime,
+            String description
+    ) {
+    }
 }

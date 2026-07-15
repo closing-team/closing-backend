@@ -60,4 +60,26 @@ public class Task extends BaseEntity {
         this.description = description;
     }
 
+    public void update(String title, LocalDate startDate, LocalDate endDate,
+                       LocalTime startTime, LocalTime endTime, String description) {
+        if (title != null && !title.isBlank()) {
+            this.title = title;
+        }
+        if (startDate != null) {
+            this.startDate = startDate;
+        }
+        if (endDate != null) {
+            this.endDate = endDate;
+        }
+        if (startTime != null) {
+            this.startTime = startTime;
+        }
+        if (endTime != null) {
+            this.endTime = endTime;
+        }
+        if (description != null) {
+            this.description = description;
+        }
+    }
+
 }

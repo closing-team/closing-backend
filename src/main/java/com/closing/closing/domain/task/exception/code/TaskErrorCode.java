@@ -7,7 +7,8 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum TaskErrorCode {
-    TASK_TITLE_BLANK(HttpStatus.BAD_REQUEST, "TASK400", "일정 제목이 비어있습니다.");
+    TASK_TITLE_BLANK(HttpStatus.BAD_REQUEST, "TASK400", "일정 제목이 비어있습니다."),
+    TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK404", "일정을 찾을 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
