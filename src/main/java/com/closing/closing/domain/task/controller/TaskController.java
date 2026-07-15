@@ -7,6 +7,7 @@ import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Task", description = "캘린더 일정 API")
@@ -23,8 +24,20 @@ public class TaskController {
     @Operation(summary = "일정 추가", description = "캘린더 일정(할일)을 수동으로 추가합니다.")
     @PostMapping
     public ApiResponse<TaskResDTO.CreateTaskResultDTO> createTask(
-            @RequestBody TaskReqDTO.CreateTaskDTO request
+            @Valid @RequestBody TaskReqDTO.CreateTaskDTO request
     ) {
         return ApiResponse.onSuccess(taskService.createTask(request));
+    }
+
+    /**
+     * HOME00X - 캘린더 일정 수정
+     */
+    @Operation(summary = "일정 수정", description = "캘린더 일정(할일)을 수정합니다.")
+    @PatchMapping("/{taskId}")
+    public ApiResponse<TaskResDTO.UpdateTaskResultDTO> updateTask(
+            @PathVariable("taskId") Long taskId,
+            @Valid @RequestBody TaskReqDTO.UpdateTaskDTO request
+    ) {
+        return ApiResponse.onSuccess(taskService.updateTask(taskId, request));
     }
 }
