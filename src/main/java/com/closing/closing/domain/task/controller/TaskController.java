@@ -19,9 +19,9 @@ public class TaskController {
     private final TaskService taskService;
 
     /**
-     * HOME003 - 캘린더 일정 추가
+     * 일정 추가
      */
-    @Operation(summary = "일정 추가", description = "캘린더 일정(할일)을 수동으로 추가합니다.")
+    @Operation(summary = "일정 추가", description = "할일을 수동으로 추가합니다.")
     @PostMapping
     public ApiResponse<TaskResDTO.CreateTaskResultDTO> createTask(
             @Valid @RequestBody TaskReqDTO.CreateTaskDTO request
@@ -30,9 +30,9 @@ public class TaskController {
     }
 
     /**
-     * HOME00X - 캘린더 일정 수정
+     * 일정 수정
      */
-    @Operation(summary = "일정 수정", description = "캘린더 일정(할일)을 수정합니다.")
+    @Operation(summary = "일정 수정", description = "할일을 수정합니다.")
     @PatchMapping("/{taskId}")
     public ApiResponse<TaskResDTO.UpdateTaskResultDTO> updateTask(
             @PathVariable("taskId") Long taskId,
