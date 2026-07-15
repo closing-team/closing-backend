@@ -40,4 +40,23 @@ public class TaskService {
 
         return TaskResDTO.CreateTaskResultDTO.from(savedTask);
     }
+
+    @Transactional
+    public TaskResDTO.UpdateTaskResultDTO updateTask(Long taskId, TaskReqDTO.UpdateTaskDTO request) {
+        // TODO: 인증 추가 후 본인의 일정인지 확인 필요
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+
+        task.update(
+                request.title(),
+                request.startDate(),
+                request.endDate(),
+                request.startTime(),
+                request.endTime(),
+                request.description()
+        );
+
+        return TaskResDTO.UpdateTaskResultDTO.from(task);
+    }
 }
