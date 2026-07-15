@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -111,8 +112,72 @@ class TaskServiceTest {
         assertEquals(TaskErrorCode.TASK_TITLE_BLANK, exception.getTaskErrorCode());
     }
 
+    @Test
+    @DisplayName("일정 수정 성공")
+    void updateTask_Success() throws Exception {
+        // given
+        Long taskId = 1L;
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                "제목 변경",
+                LocalDate.of(2026, 7, 16),
+                LocalDate.of(2026, 7, 17),
+                LocalTime.of(12, 0),
+                LocalTime.of(13, 0),
+                "설명 변경"
+        );
+
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("원래 제목")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(10, 30))
+                .endTime(LocalTime.of(11, 30))
+                .source(TaskSource.MANUAL)
+                .description("원래 설명")
+                .build();
+        setCreatedAt(existingTask, LocalDateTime.of(2026, 7, 15, 10, 0));
+        setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 16, 10, 0));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+
+        // when
+        TaskResDTO.UpdateTaskResultDTO result = taskService.updateTask(taskId, request);
+
+        // then
+        assertEquals("제목 변경", result.title());
+        assertEquals(LocalDate.of(2026, 7, 16), result.startDate());
+        assertEquals(LocalDate.of(2026, 7, 17), result.endDate());
+        assertEquals(LocalTime.of(12, 0), result.startTime());
+        assertEquals("설명 변경", existingTask.getDescription());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 일정 수정 시 TASK404 예외 발생")
+    void updateTask_Fail_WhenTaskNotFound() {
+        // given
+        Long taskId = 999L;
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                "제목 변경", null, null, null, null, null
+        );
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+
+        // when & then
+        TaskException exception = assertThrows(TaskException.class,
+                () -> taskService.updateTask(taskId, request));
+
+        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+    }
+
     private void setCreatedAt(Task task, LocalDateTime time) throws Exception {
         Field field = task.getClass().getSuperclass().getDeclaredField("createdAt");
+        field.setAccessible(true);
+        field.set(task, time);
+    }
+
+    private void setUpdatedAt(Task task, LocalDateTime time) throws Exception {
+        Field field = task.getClass().getSuperclass().getDeclaredField("updatedAt");
         field.setAccessible(true);
         field.set(task, time);
     }
