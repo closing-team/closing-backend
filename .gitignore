@@ -39,3 +39,7 @@ out/
 ### Local AI coding assistants ###
 .codex/
 .omx/
+
+### Local agent instructions ###
+/AGENTS.md
+/agent-docs/

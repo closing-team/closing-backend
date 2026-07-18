@@ -12,6 +12,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -32,8 +33,13 @@ public class Product extends BaseEntity {
     @Column(nullable = false)
     private String title;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String category;
+    private BusinessCategory businessCategory;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProductCategory productCategory;
 
     @Column(nullable = false)
     private int price;
@@ -64,12 +70,23 @@ public class Product extends BaseEntity {
     private LocalDate purchasedAt;
 
     @Builder
-    public Product(User seller, String title, String category, int price, String description,
-                   List<String> imageUrls, boolean isDeliveryAvailable, boolean isDirectAvailable,
-                   String tradeLocation, BigDecimal latitude, BigDecimal longitude, LocalDate purchasedAt) {
+    public Product(User seller,
+                   String title,
+                   BusinessCategory businessCategory,
+                   ProductCategory productCategory,
+                   int price,
+                   String description,
+                   List<String> imageUrls,
+                   boolean isDeliveryAvailable,
+                   boolean isDirectAvailable,
+                   String tradeLocation,
+                   BigDecimal latitude,
+                   BigDecimal longitude,
+                   LocalDate purchasedAt) {
         this.seller = seller;
         this.title = title;
-        this.category = category;
+        this.businessCategory = businessCategory;
+        this.productCategory = productCategory;
         this.price = price;
         this.description = description;
         this.imageUrls = imageUrls;
@@ -81,4 +98,16 @@ public class Product extends BaseEntity {
         this.purchasedAt = purchasedAt;
     }
 
+    public List<TradeMethod> getTradeMethods() {
+        List<TradeMethod> tradeMethods = new ArrayList<>();
+        if (this.isDirectAvailable) { tradeMethods.add(TradeMethod.DIRECT); }
+        if (this.isDeliveryAvailable) { tradeMethods.add(TradeMethod.DELIVERY); }
+
+        return tradeMethods;
+    }
+
+    // 소프트 삭제
+    public void delete() {
+        this.status = ProductStatus.DELETED;
+    }
 }
