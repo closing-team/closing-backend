@@ -22,6 +22,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -166,6 +167,44 @@ class TaskServiceTest {
         // when & then
         TaskException exception = assertThrows(TaskException.class,
                 () -> taskService.updateTask(taskId, request));
+
+        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+    }
+
+    @Test
+    @DisplayName("일정 삭제 성공")
+    void deleteTask_Success() {
+        // given
+        Long taskId = 1L;
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("삭제할 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(10, 30))
+                .endTime(LocalTime.of(11, 30))
+                .source(TaskSource.MANUAL)
+                .description("설명")
+                .build();
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+
+        // when & then
+        assertDoesNotThrow(() -> taskService.deleteTask(taskId));
+        verify(taskRepository).delete(existingTask);
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 일정 삭제 시 TASK404 예외 발생")
+    void deleteTask_Fail_WhenTaskNotFound() {
+        // given
+        Long taskId = 999L;
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+
+        // when & then
+        TaskException exception = assertThrows(TaskException.class,
+                () -> taskService.deleteTask(taskId));
 
         assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
     }
