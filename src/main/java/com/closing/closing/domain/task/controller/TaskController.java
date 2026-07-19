@@ -40,4 +40,16 @@ public class TaskController {
     ) {
         return ApiResponse.onSuccess(taskService.updateTask(taskId, request));
     }
+
+    /**
+     * 일정 삭제
+     */
+    @Operation(summary = "일정 삭제", description = "일정(할일)을 삭제합니다.")
+    @DeleteMapping("/{taskId}")
+    public ApiResponse<Void> deleteTask(
+            @PathVariable("taskId") Long taskId
+    ) {
+        taskService.deleteTask(taskId);
+        return ApiResponse.onSuccess(null);
+    }
 }
