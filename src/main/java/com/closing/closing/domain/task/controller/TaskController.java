@@ -52,4 +52,15 @@ public class TaskController {
         taskService.deleteTask(taskId);
         return ApiResponse.onSuccess(null);
     }
+
+    /**
+     * 일정 상세 조회
+     */
+    @Operation(summary = "일정 상세 조회", description = "일정(할일)의 상세 정보를 조회합니다.")
+    @GetMapping("/{taskId}")
+    public ApiResponse<TaskResDTO.TaskDetailDTO> getTask(
+            @PathVariable("taskId") Long taskId
+    ) {
+        return ApiResponse.onSuccess(taskService.getTask(taskId));
+    }
 }
