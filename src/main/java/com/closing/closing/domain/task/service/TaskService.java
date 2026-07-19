@@ -69,4 +69,13 @@ public class TaskService {
 
         taskRepository.delete(task);
     }
+
+    public TaskResDTO.TaskDetailDTO getTask(Long taskId) {
+        // TODO: 인증 추가 후 본인의 일정인지 확인 필요
+
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+
+        return TaskResDTO.TaskDetailDTO.from(task);
+    }
 }
