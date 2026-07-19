@@ -209,6 +209,57 @@ class TaskServiceTest {
         assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
     }
 
+    @Test
+    @DisplayName("일정 상세 조회 성공")
+    void getTask_Success() throws Exception {
+        // given
+        Long taskId = 1L;
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("매장 철거 업체 미팅")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 16))
+                .startTime(LocalTime.of(10, 30))
+                .endTime(LocalTime.of(12, 0))
+                .source(TaskSource.MANUAL)
+                .description("업체 준비 서류 필요")
+                .build();
+        setCreatedAt(existingTask, LocalDateTime.of(2026, 7, 4, 13, 0));
+        setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 4, 13, 5));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+
+        // when
+        TaskResDTO.TaskDetailDTO result = taskService.getTask(taskId);
+
+        // then
+        assertEquals("매장 철거 업체 미팅", result.title());
+        assertEquals(LocalDate.of(2026, 7, 15), result.startDate());
+        assertEquals(LocalDate.of(2026, 7, 16), result.endDate());
+        assertEquals(LocalTime.of(10, 30), result.startTime());
+        assertEquals(LocalTime.of(12, 0), result.endTime());
+        assertEquals("업체 준비 서류 필요", result.description());
+        assertFalse(result.isCompleted());
+        assertEquals("manual", result.source());
+        assertNotNull(result.createdAt());
+        assertNotNull(result.updatedAt());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 일정 조회 시 TASK404 예외 발생")
+    void getTask_Fail_WhenTaskNotFound() {
+        // given
+        Long taskId = 999L;
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+
+        // when & then
+        TaskException exception = assertThrows(TaskException.class,
+                () -> taskService.getTask(taskId));
+
+        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+    }
+
     private void setCreatedAt(Task task, LocalDateTime time) throws Exception {
         Field field = task.getClass().getSuperclass().getDeclaredField("createdAt");
         field.setAccessible(true);
