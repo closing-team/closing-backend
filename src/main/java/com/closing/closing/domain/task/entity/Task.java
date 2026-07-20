@@ -82,4 +82,8 @@ public class Task extends BaseEntity {
         }
     }
 
+    public void complete(boolean isCompleted) {
+        this.isCompleted = isCompleted;
+    }
+
 }
