@@ -1,7 +1,9 @@
 package com.closing.closing.domain.auth.controller;
 
 import com.closing.closing.domain.auth.dto.request.KakaoLoginRequest;
+import com.closing.closing.domain.auth.dto.request.SignupRequest;
 import com.closing.closing.domain.auth.dto.response.LoginResponse;
+import com.closing.closing.domain.auth.dto.response.SignupResponse;
 import com.closing.closing.domain.auth.service.AuthService;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +24,14 @@ public class AuthController {
     @PostMapping("/kakao")
     public ApiResponse<LoginResponse> kakaoLogin(@Valid @RequestBody KakaoLoginRequest request) {
         return ApiResponse.onSuccess(authService.kakaoLogin(request.getCode()));
+    }
+
+    @Operation(summary = "회원가입")
+    @PostMapping("/signup")
+    public ApiResponse<SignupResponse> signup(
+            @RequestHeader("Authorization") String authorizationHeader,
+            @Valid @RequestBody SignupRequest request) {
+        return ApiResponse.onSuccess(authService.signup(authorizationHeader, request));
     }
 
     @Operation(summary = "로그아웃")

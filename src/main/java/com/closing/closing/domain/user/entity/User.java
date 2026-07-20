@@ -48,4 +48,12 @@ public class User extends BaseEntity {
         this.profileImageUrl = profileImageUrl;
     }
 
+    public void completeSignup(String name, String nickname, String phone,
+                               String email, String profileImageUrl) {
+        this.name = name;
+        this.nickname = nickname;
+        this.phone = phone;
+        this.email = email;
+        this.profileImageUrl = profileImageUrl;
+    }
 }
