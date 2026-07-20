@@ -3,7 +3,7 @@ package com.closing.closing.domain.ai.repository;
 import com.closing.closing.domain.ai.entity.AiSession;
 import java.util.Optional;
 
-// 세션 저장 위치(DB vs Redis)는 논의 후 결정해야 함. - 구현체 교체가 쉽도록 인터페이스로 분리
+// 세션 저장 위치: 현재 PostgreSQL 사용 중 (추후 필요 시 Redis 전환 검토)
 // 현재는 JPA(DB) 구현체만 존재
 public interface AiSessionRepository {
 
