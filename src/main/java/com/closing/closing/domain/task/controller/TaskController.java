@@ -63,4 +63,16 @@ public class TaskController {
     ) {
         return ApiResponse.onSuccess(taskService.getTask(taskId));
     }
+
+    /**
+     * 일정 완료 처리
+     */
+    @Operation(summary = "일정 완료 처리", description = "일정(할일)의 완료 상태를 변경합니다.")
+    @PatchMapping("/{taskId}/complete")
+    public ApiResponse<TaskResDTO.CompleteTaskResultDTO> completeTask(
+            @PathVariable("taskId") Long taskId,
+            @Valid @RequestBody TaskReqDTO.CompleteTaskDTO request
+    ) {
+        return ApiResponse.onSuccess(taskService.completeTask(taskId, request));
+    }
 }
