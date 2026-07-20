@@ -110,4 +110,9 @@ public class Product extends BaseEntity {
     public void delete() {
         this.status = ProductStatus.DELETED;
     }
+
+    // 상품 상태 수정
+    public void updateStatus(ProductStatus productStatus) {
+        this.status = productStatus;
+    }
 }

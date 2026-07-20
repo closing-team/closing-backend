@@ -16,7 +16,9 @@ public enum ErrorCode {
     INVALID_IMAGE_COUNT(HttpStatus.BAD_REQUEST, "INVALID_IMAGE_COUNT", "상품 이미지는 1장 이상 10장 이하로 등록해야 합니다."),
     PRODUCT_DELETE_FORBIDDEN(HttpStatus.FORBIDDEN, "PRODUCT_DELETE_FORBIDDEN", "본인의 상품만 삭제할 수 있습니다."),
     IMAGE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_UPLOAD_FAILED", "이미지 업로드에 실패했습니다."),
-    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_DELETE_FAILED", "이미지 삭제에 실패했습니다.");
+    IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_DELETE_FAILED", "이미지 삭제에 실패했습니다."),
+    PRODUCT_STATUS_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "PRODUCT_STATUS_UPDATE_FORBIDDEN", "본인의 상품만 상태를 수정할 수 있습니다."),
+    INVALID_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "INVALID_PRODUCT_STATUS", "지원하지 않는 상품 상태입니다.");
     //INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_IMAGE_FORMAT", "지원하지 않는 이미지 형식입니다.");
 
     private final HttpStatus httpStatus;

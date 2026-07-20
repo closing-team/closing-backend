@@ -3,6 +3,7 @@ package com.closing.closing.domain.product.service;
 import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
 import com.closing.closing.domain.product.dto.response.ProductCreateResponse;
 import com.closing.closing.domain.product.dto.response.ProductResponse;
+import com.closing.closing.domain.product.dto.response.ProductStatusResponse;
 import com.closing.closing.domain.product.entity.Product;
 import com.closing.closing.domain.product.entity.ProductStatus;
 import com.closing.closing.domain.product.entity.TradeMethod;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -81,4 +83,39 @@ public class ProductService {
         // 소프트 삭제
         product.delete();
     }
+
+    @Transactional
+    public ProductStatusResponse updateProductStatus(Long userId, Long productId, String status) {
+
+        ProductStatus productStatus = convertProductStatus(status);
+
+        Product product = productRepository.findByIdAndStatusNot(productId, ProductStatus.DELETED)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        boolean isOwner = product.getSeller().getId().equals(userId);
+        if (!isOwner) {
+            throw new CustomException(ErrorCode.PRODUCT_STATUS_UPDATE_FORBIDDEN);
+        }
+
+        product.updateStatus(productStatus);
+        productRepository.flush(); // 상태변경 SQL을 즉시 DB에 반영 -> 갱신된 updatedAt 값 읽기 위함
+
+        return ProductStatusResponse.from(product);
+    }
+
+    // String -> ProductStatus 변환 함수
+    private ProductStatus convertProductStatus(String status) {
+        try {
+            ProductStatus productStatus = ProductStatus.valueOf(status);
+
+            if (productStatus == ProductStatus.DELETED) {
+                throw new CustomException(ErrorCode.INVALID_PRODUCT_STATUS);
+            }
+
+            return productStatus;
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.INVALID_PRODUCT_STATUS);
+        }
+    }
+
 }

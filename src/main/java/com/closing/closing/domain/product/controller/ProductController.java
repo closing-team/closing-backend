@@ -1,8 +1,11 @@
 package com.closing.closing.domain.product.controller;
 
 import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
+import com.closing.closing.domain.product.dto.request.ProductStatusRequest;
 import com.closing.closing.domain.product.dto.response.ProductCreateResponse;
 import com.closing.closing.domain.product.dto.response.ProductResponse;
+import com.closing.closing.domain.product.dto.response.ProductStatusResponse;
+import com.closing.closing.domain.product.entity.ProductStatus;
 import com.closing.closing.domain.product.service.ProductImageService;
 import com.closing.closing.domain.product.service.ProductService;
 import com.closing.closing.global.response.ApiResponse;
@@ -64,5 +67,19 @@ public class ProductController {
         productService.deleteProduct(productId, userId);
 
         return ApiResponse.onSuccess(null);
+    }
+
+    // 상품 상태 수정
+    @PatchMapping("/{productId}/status")
+    public ApiResponse<ProductStatusResponse> updateProductStatus(
+            @PathVariable("productId") Long productId,
+            @Valid @RequestBody ProductStatusRequest request
+    ) {
+        // TODO: 인증 연결 후 인증 객체에서 추출
+        Long userId = 1L;
+
+        ProductStatusResponse response = productService.updateProductStatus(userId, productId, request.getStatus());
+
+        return ApiResponse.onSuccess(response);
     }
 }
