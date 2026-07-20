@@ -11,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -89,5 +93,34 @@ public class TaskService {
         task.complete(request.isCompleted());
 
         return TaskResDTO.CompleteTaskResultDTO.from(task);
+    }
+
+    public TaskResDTO.HomeDTO getHome(YearMonth yearMonth) {
+        // TODO: 인증 추가 후 본인의 일정만 조회하도록 변경 필요
+
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+
+        List<Task> tasks = taskRepository.findAllByMonth(startDate, endDate);
+
+        int totalCount = tasks.size();
+        int completedCount = (int) tasks.stream().filter(Task::isCompleted).count();
+        double progressRate = totalCount == 0 ? 0.0
+                : Math.round((double) completedCount / totalCount * 1000) / 10.0;
+
+        TaskResDTO.SummaryDTO summary = TaskResDTO.SummaryDTO.builder()
+                .totalCount(totalCount)
+                .completedCount(completedCount)
+                .progressRate(progressRate)
+                .build();
+
+        List<TaskResDTO.CalendarTaskDTO> calendar = tasks.stream()
+                .map(TaskResDTO.CalendarTaskDTO::from)
+                .toList();
+
+        return TaskResDTO.HomeDTO.builder()
+                .summary(summary)
+                .calendar(calendar)
+                .build();
     }
 }
