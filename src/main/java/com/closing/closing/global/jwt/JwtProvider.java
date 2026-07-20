@@ -17,8 +17,6 @@ public class JwtProvider {
     private static final String TYPE_ACCESS = "access";
     private static final String TYPE_REFRESH = "refresh";
     private static final String TYPE_SIGNUP = "signup";
-    private static final String CLAIM_KAKAO_ID = "kakaoId";
-
     private final SecretKey secretKey;
     private final long accessTokenExpiry;
     private final long refreshTokenExpiry;
@@ -48,18 +46,14 @@ public class JwtProvider {
                 .compact();
     }
 
-    public String createSignupToken(String kakaoId) {
+    public String createSignupToken(Long userId) {
         return buildToken(TYPE_SIGNUP, signupTokenExpiry)
-                .claim(CLAIM_KAKAO_ID, kakaoId)
+                .claim(CLAIM_USER_ID, userId)
                 .compact();
     }
 
     public Long getUserId(String token) {
         return getClaims(token).get(CLAIM_USER_ID, Long.class);
-    }
-
-    public String getKakaoId(String token) {
-        return getClaims(token).get(CLAIM_KAKAO_ID, String.class);
     }
 
     public boolean isSignupToken(String token) {

@@ -29,7 +29,16 @@ public class AuthService {
         Optional<User> existingUser = userRepository.findByKakaoId(userInfo.getKakaoId());
 
         if (existingUser.isEmpty()) {
-            String signupToken = jwtProvider.createSignupToken(userInfo.getKakaoId());
+            // 신규 유저: 카카오 기본 정보로 DB에 먼저 저장 후 signupToken 발급
+            // 이름·전화번호·약관 동의는 이후 회원가입 플로우에서 업데이트
+            User newUser = User.builder()
+                    .kakaoId(userInfo.getKakaoId())
+                    .nickname(userInfo.getNickname())
+                    .email(userInfo.getEmail())
+                    .profileImageUrl(userInfo.getProfileImageUrl())
+                    .build();
+            User savedUser = userRepository.save(newUser);
+            String signupToken = jwtProvider.createSignupToken(savedUser.getId());
             return LoginResponse.ofNewUser(signupToken);
         }
 
