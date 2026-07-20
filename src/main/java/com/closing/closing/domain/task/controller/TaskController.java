@@ -8,7 +8,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.YearMonth;
 
 @Tag(name = "Task", description = "캘린더 일정 API")
 @RestController
@@ -74,5 +77,16 @@ public class TaskController {
             @Valid @RequestBody TaskReqDTO.CompleteTaskDTO request
     ) {
         return ApiResponse.onSuccess(taskService.completeTask(taskId, request));
+    }
+
+    /**
+     * 홈 화면 전체 조회
+     */
+    @Operation(summary = "홈 화면 전체 조회", description = "해당 월의 진행도와 일정 목록을 조회합니다.")
+    @GetMapping("/home")
+    public ApiResponse<TaskResDTO.HomeDTO> getHome(
+            @RequestParam("yearMonth") @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth
+    ) {
+        return ApiResponse.onSuccess(taskService.getHome(yearMonth));
     }
 }
