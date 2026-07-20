@@ -130,4 +130,21 @@ public class TaskResDTO {
                     .build();
         }
     }
+
+    @Builder
+    public record CompleteTaskResultDTO(
+            Long taskId,
+            boolean isCompleted,
+
+            @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ssxxx")
+            OffsetDateTime updatedAt
+    ) {
+        public static CompleteTaskResultDTO from(Task task) {
+            return CompleteTaskResultDTO.builder()
+                    .taskId(task.getId())
+                    .isCompleted(task.isCompleted())
+                    .updatedAt(task.getUpdatedAt() != null ? task.getUpdatedAt().atOffset(ZoneOffset.of("+09:00")) : null)
+                    .build();
+        }
+    }
 }

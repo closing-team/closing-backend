@@ -36,4 +36,10 @@ public class TaskReqDTO {
             String description
     ) {
     }
+
+    public record CompleteTaskDTO(
+            @NotNull(message = "완료 여부는 필수입니다.")
+            Boolean isCompleted
+    ) {
+    }
 }
