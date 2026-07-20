@@ -9,7 +9,11 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500", "서버 오류가 발생했습니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
-    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON401", "인증이 필요합니다.");
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON401", "인증이 필요합니다."),
+
+    AUTH_KAKAO(HttpStatus.UNAUTHORIZED, "AUTH_KAKAO401", "카카오 인증에 실패했습니다."),
+    AUTH_KAKAO_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_KAKAO_EXPIRED401", "카카오 토큰이 만료되었습니다."),
+    AUTH_SIGNUP_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_SIGNUP_TOKEN404", "유효하지 않거나 만료된 가입 토큰입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
