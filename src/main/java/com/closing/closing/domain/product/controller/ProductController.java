@@ -1,11 +1,9 @@
 package com.closing.closing.domain.product.controller;
 
+import com.closing.closing.domain.product.dto.request.MyProductListRequest;
 import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
 import com.closing.closing.domain.product.dto.request.ProductStatusRequest;
-import com.closing.closing.domain.product.dto.response.ProductCreateResponse;
-import com.closing.closing.domain.product.dto.response.ProductBookmarkResponse;
-import com.closing.closing.domain.product.dto.response.ProductResponse;
-import com.closing.closing.domain.product.dto.response.ProductStatusResponse;
+import com.closing.closing.domain.product.dto.response.*;
 import com.closing.closing.domain.product.service.ProductImageService;
 import com.closing.closing.domain.product.service.ProductService;
 import com.closing.closing.global.response.ApiResponse;
@@ -105,6 +103,19 @@ public class ProductController {
         Long userId = 1L;
 
         ProductBookmarkResponse response = productService.deleteProductBookmark(userId, productId);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    // 내 상품 조회
+    @GetMapping("/me")
+    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getMyProducts(
+            @Valid @ModelAttribute MyProductListRequest request
+    ) {
+        // TODO: 인증
+        Long userId = 1L;
+        ProductListResponse<ProductSummaryResponse, Long> response =
+                productService.getMyProducts(userId, request);
 
         return ApiResponse.onSuccess(response);
     }

@@ -1,10 +1,8 @@
 package com.closing.closing.domain.product.service;
 
+import com.closing.closing.domain.product.dto.request.MyProductListRequest;
 import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
-import com.closing.closing.domain.product.dto.response.ProductCreateResponse;
-import com.closing.closing.domain.product.dto.response.ProductBookmarkResponse;
-import com.closing.closing.domain.product.dto.response.ProductResponse;
-import com.closing.closing.domain.product.dto.response.ProductStatusResponse;
+import com.closing.closing.domain.product.dto.response.*;
 import com.closing.closing.domain.product.entity.Product;
 import com.closing.closing.domain.product.entity.ProductBookmark;
 import com.closing.closing.domain.product.entity.ProductStatus;
@@ -16,6 +14,8 @@ import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -119,6 +119,14 @@ public class ProductService {
         }
     }
 
+    private ProductStatus convertOptionalProductStatus(String status) {
+        if (!StringUtils.hasText(status)) {
+            return null;
+        }
+
+        return convertProductStatus(status);
+    }
+
     @Transactional
     public ProductBookmarkResponse createProductBookmark(Long userId, Long productId) {
 
@@ -155,6 +163,48 @@ public class ProductService {
         productBookmarkRepository.delete(productBookmark);
 
         return ProductBookmarkResponse.from(product, false);
+    }
+
+    public ProductListResponse<ProductSummaryResponse, Long> getMyProducts(Long userId, MyProductListRequest request) {
+
+        // 요청으로 들어온 status 문자열을 ProductStatus로 변환
+        ProductStatus status = convertOptionalProductStatus(request.getStatus());
+
+        // hasNext 계산 위해 요청 개수보다 1개 더 조회
+        Pageable pageable = PageRequest.of(
+                0, request.getSize() + 1
+        );
+
+        List<Product> products = productRepository.findMyProducts(
+                userId,
+                ProductStatus.DELETED,
+                status,
+                request.getCursor(),
+                pageable
+        );
+
+        boolean hasNext = products.size() > request.getSize();
+
+        List<Product> pageProducts = hasNext
+                ? products.subList(0, request.getSize())
+                : products;
+
+        List<ProductSummaryResponse> productResponses = pageProducts.stream()
+                .map(ProductSummaryResponse::from)
+                .toList();
+
+        Long nextCursor = hasNext && !pageProducts.isEmpty()
+                ? pageProducts.get(pageProducts.size() - 1).getId()
+                : null;
+
+        CursorPageResponse<Long> pageResponse =
+                CursorPageResponse.of(nextCursor, hasNext);
+
+        return new ProductListResponse<>(
+                productResponses,
+                pageResponse
+        );
+
     }
 
 }
