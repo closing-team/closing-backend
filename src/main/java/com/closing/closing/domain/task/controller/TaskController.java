@@ -24,7 +24,7 @@ public class TaskController {
     /**
      * 일정 추가
      */
-    @Operation(summary = "일정 추가", description = "할일을 수동으로 추가합니다.")
+    @Operation(summary = "일정 추가", description = "일정을 수동으로 추가합니다.")
     @PostMapping
     public ApiResponse<TaskResDTO.CreateTaskResultDTO> createTask(
             @Valid @RequestBody TaskReqDTO.CreateTaskDTO request
@@ -35,7 +35,7 @@ public class TaskController {
     /**
      * 일정 수정
      */
-    @Operation(summary = "일정 수정", description = "할일을 수정합니다.")
+    @Operation(summary = "일정 수정", description = "일정을 수정합니다.")
     @PatchMapping("/{taskId}")
     public ApiResponse<TaskResDTO.UpdateTaskResultDTO> updateTask(
             @PathVariable("taskId") Long taskId,
@@ -47,7 +47,7 @@ public class TaskController {
     /**
      * 일정 삭제
      */
-    @Operation(summary = "일정 삭제", description = "일정(할일)을 삭제합니다.")
+    @Operation(summary = "일정 삭제", description = "일정을 삭제합니다.")
     @DeleteMapping("/{taskId}")
     public ApiResponse<Void> deleteTask(
             @PathVariable("taskId") Long taskId
@@ -59,7 +59,7 @@ public class TaskController {
     /**
      * 일정 상세 조회
      */
-    @Operation(summary = "일정 상세 조회", description = "일정(할일)의 상세 정보를 조회합니다.")
+    @Operation(summary = "일정 상세 조회", description = "일정의 상세 정보를 조회합니다.")
     @GetMapping("/{taskId}")
     public ApiResponse<TaskResDTO.TaskDetailDTO> getTask(
             @PathVariable("taskId") Long taskId
@@ -70,7 +70,7 @@ public class TaskController {
     /**
      * 일정 완료 처리
      */
-    @Operation(summary = "일정 완료 처리", description = "일정(할일)의 완료 상태를 변경합니다.")
+    @Operation(summary = "일정 완료 처리", description = "일정의 완료 상태를 변경합니다.")
     @PatchMapping("/{taskId}/complete")
     public ApiResponse<TaskResDTO.CompleteTaskResultDTO> completeTask(
             @PathVariable("taskId") Long taskId,
@@ -82,7 +82,7 @@ public class TaskController {
     /**
      * 홈 화면 전체 조회
      */
-    @Operation(summary = "홈 화면 전체 조회", description = "해당 월의 진행도와 일정 목록을 조회합니다.")
+    @Operation(summary = "홈 화면 전체 조회", description = "전체 일정의 진행도와 해당 월의 일정 목록을 조회합니다.")
     @GetMapping("/home")
     public ApiResponse<TaskResDTO.HomeDTO> getHome(
             @RequestParam("yearMonth") @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth
