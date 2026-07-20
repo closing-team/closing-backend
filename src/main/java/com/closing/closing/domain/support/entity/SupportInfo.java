@@ -33,6 +33,8 @@ public class SupportInfo extends BaseEntity {
 
     private LocalDate applyEndDate;
 
+    private String applicationPeriod;
+
     @Column(columnDefinition = "TEXT")
     private String externalUrl;
 
@@ -46,14 +48,35 @@ public class SupportInfo extends BaseEntity {
     @Builder
     public SupportInfo(String organizationName, String title, String content,
                        LocalDate applyStartDate, LocalDate applyEndDate,
-                       String externalUrl, SupportStatus status) {
+                       String applicationPeriod, String externalUrl,
+                       SupportStatus status, int viewCount) {
         this.organizationName = organizationName;
         this.title = title;
         this.content = content;
         this.applyStartDate = applyStartDate;
         this.applyEndDate = applyEndDate;
+        this.applicationPeriod = applicationPeriod;
         this.externalUrl = externalUrl;
         this.status = status;
+        this.viewCount = viewCount;
     }
 
+    public void updateFromExternal(
+            String organizationName,
+            String title,
+            String content,
+            LocalDate applyStartDate,
+            LocalDate applyEndDate,
+            String applicationPeriod,
+            SupportStatus status,
+            int viewCount) {
+        this.organizationName = organizationName;
+        this.title = title;
+        this.content = content;
+        this.applyStartDate = applyStartDate;
+        this.applyEndDate = applyEndDate;
+        this.applicationPeriod = applicationPeriod;
+        this.status = status;
+        this.viewCount = viewCount;
+    }
 }
