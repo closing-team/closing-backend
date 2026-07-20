@@ -19,7 +19,8 @@ public enum ErrorCode {
     IMAGE_DELETE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "IMAGE_DELETE_FAILED", "이미지 삭제에 실패했습니다."),
     PRODUCT_STATUS_UPDATE_FORBIDDEN(HttpStatus.FORBIDDEN, "PRODUCT_STATUS_UPDATE_FORBIDDEN", "본인의 상품만 상태를 수정할 수 있습니다."),
     INVALID_PRODUCT_STATUS(HttpStatus.BAD_REQUEST, "INVALID_PRODUCT_STATUS", "지원하지 않는 상품 상태입니다."),
-    PRODUCT_BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_BOOKMARK_NOT_FOUND", "찜 상품을 찾을 수 없습니다.");
+    PRODUCT_BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT_BOOKMARK_NOT_FOUND", "찜 상품을 찾을 수 없습니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "INVALID_CURSOR", "올바르지 않은 커서입니다.");
     //INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_IMAGE_FORMAT", "지원하지 않는 이미지 형식입니다.");
 
     private final HttpStatus httpStatus;

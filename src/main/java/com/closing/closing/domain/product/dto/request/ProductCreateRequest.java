@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -38,6 +39,15 @@ public class ProductCreateRequest {
     @NotBlank(message = "상품 설명은 필수입니다.")
     private String description;
 
+    // 직거래일 경우 프론트가 지도에서 선택한 위치
+    @DecimalMin(value = "-90.0", message = "위도는 -90 이상이어야 합니다.")
+    @DecimalMax(value = "90.0", message = "위도는 90 이하여야 합니다.")
+    private BigDecimal latitude;
+
+    @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
+    @DecimalMax(value = "180.0", message = "경도는 180 이하여야 합니다.")
+    private BigDecimal longitude;
+
     public Product toEntity(User seller, List<String> imageUrls) {
         boolean isDirectAvailable = tradeMethods.contains(TradeMethod.DIRECT);
         boolean isDeliveryAvailable = tradeMethods.contains(TradeMethod.DELIVERY);
@@ -52,7 +62,9 @@ public class ProductCreateRequest {
                 .imageUrls(imageUrls)
                 .isDirectAvailable(isDirectAvailable)
                 .isDeliveryAvailable(isDeliveryAvailable)
-                .tradeLocation(tradeLocation)
+                .tradeLocation(isDirectAvailable ? tradeLocation : null)
+                .latitude(isDirectAvailable ? latitude : null)
+                .longitude(isDirectAvailable ? longitude : null)
                 .build();
     }
 }

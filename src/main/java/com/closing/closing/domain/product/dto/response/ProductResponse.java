@@ -22,7 +22,7 @@ public class ProductResponse {
     private final ProductCategory productCategory;
     private final String productCategoryName;
     private final List<TradeMethod> tradeMethods;
-    private final String tradeLocation;
+    private final TradeLocationResponse tradeLocation;
     private final ProductStatus status;
     @JsonProperty("isBookmarked")
     private final boolean isBookmarked;
@@ -32,7 +32,17 @@ public class ProductResponse {
     private final LocalDateTime createdAt;
 
     // Product 객체로부터 ProductResponse를 만드는 함수
-    public static ProductResponse from(Product product, List<TradeMethod> tradeMethods, boolean isBookmarked, boolean isOwner) {
+    public static ProductResponse from(
+            Product product,
+            List<TradeMethod> tradeMethods,
+            boolean isBookmarked,
+            boolean isOwner,
+            Double distanceKm
+    ) {
+        TradeLocationResponse tradeLocation = product.isDirectAvailable()
+                ? TradeLocationResponse.of(product.getTradeLocation(), distanceKm)
+                : null;
+
         return new ProductResponse(
                 product.getId(),
                 product.getTitle(),
@@ -44,7 +54,7 @@ public class ProductResponse {
                 product.getProductCategory(),
                 product.getProductCategory().getDisplayName(),
                 tradeMethods,
-                product.getTradeLocation(),
+                tradeLocation,
                 product.getStatus(),
                 isBookmarked,
                 isOwner,

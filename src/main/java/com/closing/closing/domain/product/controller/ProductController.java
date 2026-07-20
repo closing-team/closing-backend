@@ -1,8 +1,6 @@
 package com.closing.closing.domain.product.controller;
 
-import com.closing.closing.domain.product.dto.request.MyProductListRequest;
-import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
-import com.closing.closing.domain.product.dto.request.ProductStatusRequest;
+import com.closing.closing.domain.product.dto.request.*;
 import com.closing.closing.domain.product.dto.response.*;
 import com.closing.closing.domain.product.service.ProductImageService;
 import com.closing.closing.domain.product.service.ProductService;
@@ -23,17 +21,32 @@ public class ProductController {
     private final ProductService productService;
     private final ProductImageService productImageService;
 
+    // 상품 다건 조회
+    @GetMapping
+    public ApiResponse<ProductListResponse<ProductSummaryResponse, String>> getProducts(
+            @Valid @ModelAttribute ProductListRequest request
+    ) {
+        // TODO: 인증 연결 후 인증 객체에서 추출
+        Long userId = 1L;
+
+        ProductListResponse<ProductSummaryResponse, String> response =
+                productService.getProducts(userId, request);
+
+        return ApiResponse.onSuccess(response);
+    }
+
     // 상품 조회
     @GetMapping("/{productId}")
     public ApiResponse<ProductResponse> getProduct(
-            @PathVariable("productId") Long productId
+            @PathVariable("productId") Long productId,
+            @Valid @ModelAttribute ProductRequest request
     ) {
         // TODO: userId 하드코딩 X
         // 인증 연결 이전이므로 임시 userId 설정
         // 인증 연결 이후엔 Token으로 user 판별
         Long userId = 1L;
 
-        ProductResponse response = productService.getProduct(productId, userId);
+        ProductResponse response = productService.getProduct(productId, userId, request);
 
         return ApiResponse.onSuccess(response);
     }
@@ -116,6 +129,19 @@ public class ProductController {
         Long userId = 1L;
         ProductListResponse<ProductSummaryResponse, Long> response =
                 productService.getMyProducts(userId, request);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    // 찜 상품 조회
+    @GetMapping("/bookmarks")
+    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
+            @Valid @ModelAttribute ProductBookmarkListRequest request
+    ) {
+        // TODO: 인증
+        Long userId = 1L;
+        ProductListResponse<ProductSummaryResponse, Long> response =
+                productService.getBookmarkedProducts(userId, request);
 
         return ApiResponse.onSuccess(response);
     }
