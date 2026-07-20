@@ -260,6 +260,73 @@ class TaskServiceTest {
         assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
     }
 
+    @Test
+    @DisplayName("일정 완료 처리 성공 - 완료로 변경")
+    void completeTask_Success_MarkAsCompleted() throws Exception {
+        // given
+        Long taskId = 1L;
+        TaskReqDTO.CompleteTaskDTO request = new TaskReqDTO.CompleteTaskDTO(true);
+
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("미완료 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .source(TaskSource.MANUAL)
+                .build();
+        setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 15, 14, 0));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+
+        // when
+        TaskResDTO.CompleteTaskResultDTO result = taskService.completeTask(taskId, request);
+
+        // then
+        assertTrue(result.isCompleted());
+    }
+
+    @Test
+    @DisplayName("일정 완료 처리 성공 - 미완료로 되돌리기")
+    void completeTask_Success_MarkAsIncomplete() throws Exception {
+        // given
+        Long taskId = 1L;
+        TaskReqDTO.CompleteTaskDTO request = new TaskReqDTO.CompleteTaskDTO(false);
+
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("완료된 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .source(TaskSource.MANUAL)
+                .build();
+        existingTask.complete(true); // 먼저 완료 상태로 세팅
+        setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 15, 14, 0));
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.of(existingTask));
+
+        // when
+        TaskResDTO.CompleteTaskResultDTO result = taskService.completeTask(taskId, request);
+
+        // then
+        assertFalse(result.isCompleted());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 일정 완료 처리 시 TASK404 예외 발생")
+    void completeTask_Fail_WhenTaskNotFound() {
+        // given
+        Long taskId = 999L;
+        TaskReqDTO.CompleteTaskDTO request = new TaskReqDTO.CompleteTaskDTO(true);
+
+        when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
+
+        // when & then
+        TaskException exception = assertThrows(TaskException.class,
+                () -> taskService.completeTask(taskId, request));
+
+        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+    }
+
     private void setCreatedAt(Task task, LocalDateTime time) throws Exception {
         Field field = task.getClass().getSuperclass().getDeclaredField("createdAt");
         field.setAccessible(true);
