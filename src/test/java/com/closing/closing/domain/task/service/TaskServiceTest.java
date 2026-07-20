@@ -18,6 +18,8 @@ import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -325,6 +327,71 @@ class TaskServiceTest {
                 () -> taskService.completeTask(taskId, request));
 
         assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+    }
+
+    @Test
+    @DisplayName("홈 화면 조회 성공 - 일정이 있는 경우 진행도 계산")
+    void getHome_Success_WithTasks() {
+        // given
+        YearMonth yearMonth = YearMonth.of(2026, 7);
+        LocalDate startOfMonth = yearMonth.atDay(1);
+        LocalDate endOfMonth = yearMonth.atEndOfMonth();
+
+        Task task1 = Task.builder()
+                .registration(null)
+                .title("미완료 일정")
+                .startDate(LocalDate.of(2026, 7, 10))
+                .endDate(LocalDate.of(2026, 7, 10))
+                .startTime(LocalTime.of(10, 0))
+                .endTime(LocalTime.of(11, 0))
+                .source(TaskSource.MANUAL)
+                .build();
+
+        Task task2 = Task.builder()
+                .registration(null)
+                .title("완료된 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(14, 0))
+                .endTime(LocalTime.of(15, 0))
+                .source(TaskSource.MANUAL)
+                .build();
+        task2.complete(true);
+
+        when(taskRepository.findAllByMonth(startOfMonth, endOfMonth))
+                .thenReturn(List.of(task1, task2));
+
+        // when
+        TaskResDTO.HomeDTO result = taskService.getHome(yearMonth);
+
+        // then
+        assertEquals(2, result.summary().totalCount());
+        assertEquals(1, result.summary().completedCount());
+        assertEquals(50.0, result.summary().progressRate());
+        assertEquals(2, result.calendar().size());
+        assertEquals("미완료 일정", result.calendar().get(0).title());
+        assertEquals("완료된 일정", result.calendar().get(1).title());
+    }
+
+    @Test
+    @DisplayName("홈 화면 조회 성공 - 일정이 없는 경우")
+    void getHome_Success_NoTasks() {
+        // given
+        YearMonth yearMonth = YearMonth.of(2026, 8);
+        LocalDate startOfMonth = yearMonth.atDay(1);
+        LocalDate endOfMonth = yearMonth.atEndOfMonth();
+
+        when(taskRepository.findAllByMonth(startOfMonth, endOfMonth))
+                .thenReturn(List.of());
+
+        // when
+        TaskResDTO.HomeDTO result = taskService.getHome(yearMonth);
+
+        // then
+        assertEquals(0, result.summary().totalCount());
+        assertEquals(0, result.summary().completedCount());
+        assertEquals(0.0, result.summary().progressRate());
+        assertTrue(result.calendar().isEmpty());
     }
 
     private void setCreatedAt(Task task, LocalDateTime time) throws Exception {
