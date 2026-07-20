@@ -330,47 +330,47 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("홈 화면 조회 성공 - 일정이 있는 경우 진행도 계산")
+    @DisplayName("홈 화면 조회 성공 - 진행도는 전체 기준, 캘린더는 월별 기준")
     void getHome_Success_WithTasks() {
         // given
         YearMonth yearMonth = YearMonth.of(2026, 7);
         LocalDate startOfMonth = yearMonth.atDay(1);
         LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
-        Task task1 = Task.builder()
+        Task julyTask = Task.builder()
                 .registration(null)
-                .title("미완료 일정")
+                .title("7월 일정")
                 .startDate(LocalDate.of(2026, 7, 10))
                 .endDate(LocalDate.of(2026, 7, 10))
-                .startTime(LocalTime.of(10, 0))
-                .endTime(LocalTime.of(11, 0))
                 .source(TaskSource.MANUAL)
                 .build();
 
-        Task task2 = Task.builder()
+        Task juneTask = Task.builder()
                 .registration(null)
-                .title("완료된 일정")
-                .startDate(LocalDate.of(2026, 7, 15))
-                .endDate(LocalDate.of(2026, 7, 15))
-                .startTime(LocalTime.of(14, 0))
-                .endTime(LocalTime.of(15, 0))
+                .title("6월 일정 (완료)")
+                .startDate(LocalDate.of(2026, 6, 5))
+                .endDate(LocalDate.of(2026, 6, 5))
                 .source(TaskSource.MANUAL)
                 .build();
-        task2.complete(true);
+        juneTask.complete(true);
 
+        // 전체 Task: 2개 (1개 완료)
+        when(taskRepository.findAll()).thenReturn(List.of(julyTask, juneTask));
+        // 7월 캘린더: 1개만 해당
         when(taskRepository.findAllByMonth(startOfMonth, endOfMonth))
-                .thenReturn(List.of(task1, task2));
+                .thenReturn(List.of(julyTask));
 
         // when
         TaskResDTO.HomeDTO result = taskService.getHome(yearMonth);
 
-        // then
+        // then - 진행도: 전체 기준 (2개 중 1개 완료 = 50%)
         assertEquals(2, result.summary().totalCount());
         assertEquals(1, result.summary().completedCount());
         assertEquals(50.0, result.summary().progressRate());
-        assertEquals(2, result.calendar().size());
-        assertEquals("미완료 일정", result.calendar().get(0).title());
-        assertEquals("완료된 일정", result.calendar().get(1).title());
+
+        // then - 캘린더: 7월 기준 (1개만)
+        assertEquals(1, result.calendar().size());
+        assertEquals("7월 일정", result.calendar().get(0).title());
     }
 
     @Test
@@ -381,6 +381,7 @@ class TaskServiceTest {
         LocalDate startOfMonth = yearMonth.atDay(1);
         LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
+        when(taskRepository.findAll()).thenReturn(List.of());
         when(taskRepository.findAllByMonth(startOfMonth, endOfMonth))
                 .thenReturn(List.of());
 

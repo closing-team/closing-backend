@@ -98,13 +98,10 @@ public class TaskService {
     public TaskResDTO.HomeDTO getHome(YearMonth yearMonth) {
         // TODO: 인증 추가 후 본인의 일정만 조회하도록 변경 필요
 
-        LocalDate startDate = yearMonth.atDay(1);
-        LocalDate endDate = yearMonth.atEndOfMonth();
-
-        List<Task> tasks = taskRepository.findAllByMonth(startDate, endDate);
-
-        int totalCount = tasks.size();
-        int completedCount = (int) tasks.stream().filter(Task::isCompleted).count();
+        // 진행도: 전체 Task 기준
+        List<Task> allTasks = taskRepository.findAll();
+        int totalCount = allTasks.size();
+        int completedCount = (int) allTasks.stream().filter(Task::isCompleted).count();
         double progressRate = totalCount == 0 ? 0.0
                 : Math.round((double) completedCount / totalCount * 1000) / 10.0;
 
@@ -114,7 +111,12 @@ public class TaskService {
                 .progressRate(progressRate)
                 .build();
 
-        List<TaskResDTO.CalendarTaskDTO> calendar = tasks.stream()
+        // 캘린더: 해당 월 기준
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+        List<Task> monthlyTasks = taskRepository.findAllByMonth(startDate, endDate);
+
+        List<TaskResDTO.CalendarTaskDTO> calendar = monthlyTasks.stream()
                 .map(TaskResDTO.CalendarTaskDTO::from)
                 .toList();
 
