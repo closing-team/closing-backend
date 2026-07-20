@@ -147,4 +147,53 @@ public class TaskResDTO {
                     .build();
         }
     }
+
+    @Builder
+    public record HomeDTO(
+            SummaryDTO summary,
+            java.util.List<CalendarTaskDTO> calendar
+    ) {
+    }
+
+    @Builder
+    public record SummaryDTO(
+            int totalCount,
+            int completedCount,
+            double progressRate
+    ) {
+    }
+
+    @Builder
+    public record CalendarTaskDTO(
+            Long taskId,
+            String title,
+
+            @JsonFormat(pattern = "yyyy-MM-dd")
+            LocalDate startDate,
+
+            @JsonFormat(pattern = "yyyy-MM-dd")
+            LocalDate endDate,
+
+            @JsonFormat(pattern = "HH:mm")
+            LocalTime startTime,
+
+            @JsonFormat(pattern = "HH:mm")
+            LocalTime endTime,
+
+            boolean isCompleted,
+            String source
+    ) {
+        public static CalendarTaskDTO from(Task task) {
+            return CalendarTaskDTO.builder()
+                    .taskId(task.getId())
+                    .title(task.getTitle())
+                    .startDate(task.getStartDate())
+                    .endDate(task.getEndDate())
+                    .startTime(task.getStartTime())
+                    .endTime(task.getEndTime())
+                    .isCompleted(task.isCompleted())
+                    .source(task.getSource().name().toLowerCase())
+                    .build();
+        }
+    }
 }
