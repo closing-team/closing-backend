@@ -23,4 +23,11 @@ public class AuthController {
     public ApiResponse<LoginResponse> kakaoLogin(@Valid @RequestBody KakaoLoginRequest request) {
         return ApiResponse.onSuccess(authService.kakaoLogin(request.getCode()));
     }
+
+    @Operation(summary = "로그아웃")
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
+        authService.logout(authorizationHeader);
+        return ApiResponse.onSuccess(null);
+    }
 }

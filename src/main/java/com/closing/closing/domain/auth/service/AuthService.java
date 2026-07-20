@@ -6,6 +6,8 @@ import com.closing.closing.domain.auth.dto.response.KakaoUserInfoResponse;
 import com.closing.closing.domain.auth.dto.response.LoginResponse;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import com.closing.closing.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,5 +48,21 @@ public class AuthService {
         String accessToken = jwtProvider.createAccessToken(user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
         return LoginResponse.ofExistingUser(accessToken, refreshToken);
+    }
+
+    public void logout(String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        try {
+            jwtProvider.validate(token);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+    }
+
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+        return authorizationHeader.substring(7);
     }
 }
