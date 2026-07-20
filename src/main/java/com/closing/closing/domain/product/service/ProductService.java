@@ -2,12 +2,14 @@ package com.closing.closing.domain.product.service;
 
 import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
 import com.closing.closing.domain.product.dto.response.ProductCreateResponse;
+import com.closing.closing.domain.product.dto.response.ProductBookmarkResponse;
 import com.closing.closing.domain.product.dto.response.ProductResponse;
 import com.closing.closing.domain.product.dto.response.ProductStatusResponse;
 import com.closing.closing.domain.product.entity.Product;
+import com.closing.closing.domain.product.entity.ProductBookmark;
 import com.closing.closing.domain.product.entity.ProductStatus;
 import com.closing.closing.domain.product.entity.TradeMethod;
-import com.closing.closing.domain.product.repository.ProductLikeRepository;
+import com.closing.closing.domain.product.repository.ProductBookmarkRepository;
 import com.closing.closing.domain.product.repository.ProductRepository;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
@@ -18,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -27,7 +28,7 @@ import java.util.List;
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final ProductLikeRepository productLikeRepository;
+    private final ProductBookmarkRepository productBookmarkRepository;
     private final EntityManager entityManager;
 
     // productId를 이용해 Product를 찾아 ProductResponse로 만들어 반환하는 함수
@@ -38,7 +39,7 @@ public class ProductService {
         Product product = productRepository.findByIdAndStatusNot(productId, ProductStatus.DELETED)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
-        boolean isBookmarked = productLikeRepository.existsByProduct_IdAndUser_Id(productId, userId);
+        boolean isBookmarked = productBookmarkRepository.existsByProduct_IdAndUser_Id(productId, userId);
 
         boolean isOwner = product.getSeller().getId().equals(userId);
 
@@ -116,6 +117,44 @@ public class ProductService {
         } catch (IllegalArgumentException e) {
             throw new CustomException(ErrorCode.INVALID_PRODUCT_STATUS);
         }
+    }
+
+    @Transactional
+    public ProductBookmarkResponse createProductBookmark(Long userId, Long productId) {
+
+        // 유니크 제약조건에 따라 이미 찜 되어있는지 확인
+        boolean alreadyBookmarked =
+                productBookmarkRepository.existsByProduct_IdAndUser_Id(productId, userId);
+        if (alreadyBookmarked) {
+            Product product = productRepository.findById(productId)
+                    .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+            return ProductBookmarkResponse.from(product, true);
+        }
+
+        Product product = productRepository.findByIdAndStatusNot(productId, ProductStatus.DELETED)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        User user = entityManager.getReference(User.class, userId);
+
+        ProductBookmark productBookmark = new ProductBookmark(product, user);
+        productBookmarkRepository.save(productBookmark);
+
+        return ProductBookmarkResponse.from(product, true);
+    }
+
+    @Transactional
+    public ProductBookmarkResponse deleteProductBookmark(Long userId, Long productId) {
+
+        Product product = productRepository.findByIdAndStatusNot(productId, ProductStatus.DELETED)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        ProductBookmark productBookmark = productBookmarkRepository.findByProduct_IdAndUser_Id(productId, userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_BOOKMARK_NOT_FOUND));
+
+        productBookmarkRepository.delete(productBookmark);
+
+        return ProductBookmarkResponse.from(product, false);
     }
 
 }

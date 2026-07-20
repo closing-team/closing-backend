@@ -3,9 +3,9 @@ package com.closing.closing.domain.product.controller;
 import com.closing.closing.domain.product.dto.request.ProductCreateRequest;
 import com.closing.closing.domain.product.dto.request.ProductStatusRequest;
 import com.closing.closing.domain.product.dto.response.ProductCreateResponse;
+import com.closing.closing.domain.product.dto.response.ProductBookmarkResponse;
 import com.closing.closing.domain.product.dto.response.ProductResponse;
 import com.closing.closing.domain.product.dto.response.ProductStatusResponse;
-import com.closing.closing.domain.product.entity.ProductStatus;
 import com.closing.closing.domain.product.service.ProductImageService;
 import com.closing.closing.domain.product.service.ProductService;
 import com.closing.closing.global.response.ApiResponse;
@@ -79,6 +79,32 @@ public class ProductController {
         Long userId = 1L;
 
         ProductStatusResponse response = productService.updateProductStatus(userId, productId, request.getStatus());
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    // 상품 찜 추가
+    @PostMapping("/{productId}/bookmark")
+    public ApiResponse<ProductBookmarkResponse> createBookmark(
+            @PathVariable("productId") Long productId
+    ) {
+        // TODO: 인증 연결 후 인증 객체에서 추출
+        Long userId = 1L;
+
+        ProductBookmarkResponse response = productService.createProductBookmark(userId, productId);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    // 상품 찜 삭제
+    @DeleteMapping("/{productId}/bookmark")
+    public ApiResponse<ProductBookmarkResponse> deleteBookmark(
+            @PathVariable("productId") Long productId
+    ) {
+        // TODO: 인증 객체에서 추출
+        Long userId = 1L;
+
+        ProductBookmarkResponse response = productService.deleteProductBookmark(userId, productId);
 
         return ApiResponse.onSuccess(response);
     }

@@ -10,14 +10,14 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "product_likes",
+@Table(name = "product_bookmarks",
         uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "product_id"}))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class ProductLike extends BaseCreatedEntity {
+public class ProductBookmark extends BaseCreatedEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "like_id")
+    @Column(name = "bookmark_id")
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -29,7 +29,7 @@ public class ProductLike extends BaseCreatedEntity {
     private User user;
 
     @Builder
-    public ProductLike(Product product, User user) {
+    public ProductBookmark(Product product, User user) {
         this.product = product;
         this.user = user;
     }

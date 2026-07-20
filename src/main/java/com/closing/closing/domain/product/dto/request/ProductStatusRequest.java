@@ -1,6 +1,5 @@
 package com.closing.closing.domain.product.dto.request;
 
-import com.closing.closing.domain.product.entity.ProductStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
