@@ -75,4 +75,24 @@ public class ProductImageService {
             }
         }
     }
+
+    public void delete(List<String> imageUrls) {
+        for (String imageUrl : imageUrls) {
+            imageStorage.delete(imageUrl);
+        }
+    }
+
+    public void deleteSafely(List<String> imageUrls) {
+        for (String imageUrl : imageUrls) {
+            try {
+                imageStorage.delete(imageUrl);
+            } catch (RuntimeException exception) {
+                log.warn(
+                        "S3 이미지 정리에 실패했습니다. imageUrl={}",
+                        imageUrl,
+                        exception
+                );
+            }
+        }
+    }
 }

@@ -145,4 +145,19 @@ public class ProductController {
 
         return ApiResponse.onSuccess(response);
     }
+
+    // 상품 수정
+    @PutMapping(value = "/{productId}",
+    consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProductUpdateResponse> updateProduct(
+            @PathVariable Long productId,
+            @Valid @RequestPart("request") ProductUpdateRequest request,
+            @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages
+    ) {
+        Long userId = 1L;
+        ProductUpdateResponse response =
+                productService.updateProduct(userId, productId, request, newImages);
+
+        return ApiResponse.onSuccess(response);
+    }
 }

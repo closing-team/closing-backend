@@ -19,11 +19,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -38,6 +39,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductBookmarkRepository productBookmarkRepository;
     private final EntityManager entityManager;
+    private final ProductImageService productImageService;
 
     // productId를 이용해 Product를 찾아 ProductResponse로 만들어 반환하는 함수
     public ProductResponse getProduct(
@@ -802,4 +804,110 @@ public class ProductService {
         );
     }
 
+    @Transactional
+    public ProductUpdateResponse updateProduct(
+            Long userId,
+            Long productId,
+            ProductUpdateRequest request,
+            List<MultipartFile> newImages
+    ) {
+
+        Product product = productRepository.findByIdAndStatusNot(productId, ProductStatus.DELETED)
+                .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
+
+        // 본인 상품인지 검증
+        boolean isOwner = product.getSeller().getId().equals(userId);
+        if (!isOwner) {
+            throw new CustomException(ErrorCode.PRODUCT_UPDATE_FORBIDDEN);
+        }
+
+        // retainedImages가 기존 이미지인지 검증
+        boolean hasInvalidRetainedImage =
+                !product.getImageUrls().containsAll(request.getRetainedImages());
+        if (hasInvalidRetainedImage) {
+            throw new CustomException(ErrorCode.INVALID_RETAINED_IMAGES);
+        }
+
+        // 같은 이미지 url을 여러 번 보내는지 검증
+        boolean hasDuplicateRetainedImage =
+                request.getRetainedImages().size()
+                        != new HashSet<>(
+                        request.getRetainedImages()
+                ).size();
+
+        if (hasDuplicateRetainedImage) {
+            throw new CustomException(
+                    ErrorCode.INVALID_RETAINED_IMAGES
+            );
+        }
+
+        // 최종 이미지 개수 검증
+        int retainedImageCount = request.getRetainedImages().size();
+        int newImageCount = newImages == null ? 0 : newImages.size();
+        int totalImageCount = retainedImageCount + newImageCount;
+
+        if (totalImageCount < 1 || totalImageCount > 10) {
+            throw new CustomException(ErrorCode.INVALID_IMAGE_COUNT);
+        }
+
+        // 제거할 이미지 계산
+        List<String> originalImageUrls = new ArrayList<>(product.getImageUrls());
+        List<String> removedImageUrls =
+                originalImageUrls.stream()
+                        .filter(imageUrl ->
+                                !request.getRetainedImages().contains(imageUrl)
+                        )
+                        .toList();
+
+        // 직거래인 경우 거래장소가 있어야 함
+        boolean isDirectTrade = request.getTradeMethods().contains(TradeMethod.DIRECT);
+        boolean hasInvalidDirectLocation =
+                !StringUtils.hasText(request.getTradeLocation())
+                        || request.getLatitude() == null
+                        || request.getLongitude() == null;
+
+        if (isDirectTrade && hasInvalidDirectLocation) {
+            throw new CustomException(ErrorCode.TRADE_LOCATION_REQUIRED);
+        }
+
+        // 새로운 이미지 S3 업로드
+        List<String> newImageUrls =
+                newImages == null || newImages.isEmpty()
+                        ? List.of()
+                        : productImageService.upload(newImages);
+
+        // 기존 이미지 리스트와 새로운 이미지 리스트 합침
+        List<String> totalImageUrls = new ArrayList<>(request.getRetainedImages());
+        totalImageUrls.addAll(newImageUrls);
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+
+                    // DB 커밋 성공 후 기존 이미지를 S3에서 삭제
+                    @Override
+                    public void afterCommit() {
+                        productImageService.deleteSafely(
+                                removedImageUrls
+                        );
+                    }
+
+                    // DB 트랜잭션 실패 시 새로 업로드한 이미지를 정리
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status
+                                != TransactionSynchronization.STATUS_COMMITTED) {
+                            productImageService.deleteSafely(
+                                    newImageUrls
+                            );
+                        }
+                    }
+                }
+        );
+
+        // update
+        product.updateProduct(request, totalImageUrls);
+        productRepository.flush();
+
+        return ProductUpdateResponse.from(product);
+    }
 }
