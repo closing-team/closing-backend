@@ -183,6 +183,48 @@ class BookmarkServiceTest {
         assertEquals(integrityException, exception);
     }
 
+    @Test
+    @DisplayName("지원정보 북마크 삭제 성공")
+    void deleteBookmark_Success() throws Exception {
+        // given
+        Long userId = 1L;
+        Long supportId = 1L;
+        Bookmark bookmark = Bookmark.builder()
+                .user(User.builder()
+                        .kakaoId("kakao-1")
+                        .nickname("클로징")
+                        .build())
+                .supportInfo(createSupport(supportId))
+                .build();
+        when(bookmarkRepository.findByUser_IdAndSupportInfo_Id(userId, supportId))
+                .thenReturn(Optional.of(bookmark));
+
+        // when
+        bookmarkService.deleteBookmark(userId, supportId);
+
+        // then
+        verify(bookmarkRepository).delete(bookmark);
+    }
+
+    @Test
+    @DisplayName("본인의 북마크를 찾을 수 없으면 BOOKMARK404 예외 발생")
+    void deleteBookmark_Fail_WhenBookmarkNotFound() {
+        // given
+        Long userId = 1L;
+        Long supportId = 999L;
+        when(bookmarkRepository.findByUser_IdAndSupportInfo_Id(userId, supportId))
+                .thenReturn(Optional.empty());
+
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> bookmarkService.deleteBookmark(userId, supportId));
+
+        assertEquals(
+                SupportErrorCode.BOOKMARK_NOT_FOUND,
+                exception.getSupportErrorCode());
+        verify(bookmarkRepository, never()).delete(any(Bookmark.class));
+    }
+
     private SupportInfo createSupport(Long supportId) throws Exception {
         SupportInfo supportInfo = SupportInfo.builder()
                 .organizationName("소상공인시장진흥공단")
