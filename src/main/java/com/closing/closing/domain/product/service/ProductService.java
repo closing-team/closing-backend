@@ -93,6 +93,12 @@ public class ProductService {
             throw new CustomException(ErrorCode.TRADE_LOCATION_REQUIRED);
         }
 
+        // 이미지 개수 검증
+        int imageUrlsCount = imageUrls.size();
+        if (imageUrlsCount < 1 || imageUrlsCount > 10) {
+            throw new CustomException(ErrorCode.INVALID_IMAGE_COUNT);
+        }
+
         User seller = entityManager.getReference(User.class, userId);
 
         Product product = request.toEntity(seller, imageUrls);
