@@ -41,7 +41,7 @@ out/
 .omx/
 .agents/
 
-### Local agent instructions ###
+### Local agent instructions and conversation notes ###
 /AGENTS.md
 /agent-docs/
 /notion.md
