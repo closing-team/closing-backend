@@ -12,3 +12,12 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+storage:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION:ap-northeast-2}
+ai:
+  server:
+    base-url: ${AI_SERVER_BASE_URL:https://closing-ai-production.up.railway.app}
+    timeout-seconds: 90
