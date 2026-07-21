@@ -1,6 +1,7 @@
 package com.closing.closing.domain.support.service;
 
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
+import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.exception.SupportException;
@@ -11,15 +12,23 @@ import com.closing.closing.domain.user.entity.User;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookmarkService {
+
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final LocalDate LAST_END_DATE = LocalDate.of(9999, 12, 31);
 
     private final BookmarkRepository bookmarkRepository;
     private final SupportRepository supportRepository;
@@ -60,6 +69,155 @@ public class BookmarkService {
                         SupportErrorCode.BOOKMARK_NOT_FOUND));
 
         bookmarkRepository.delete(bookmark);
+    }
+
+    public BookmarkResDTO.BookmarkListDTO getBookmarks(
+            Long userId,
+            String sortValue,
+            String cursorValue,
+            String sizeValue) {
+        BookmarkSort sort = BookmarkSort.from(sortValue);
+        int size = parseSize(sizeValue);
+        BookmarkCursor cursor = parseCursor(sort, cursorValue);
+        Pageable pageable = PageRequest.of(0, size + 1);
+
+        List<Bookmark> result = findBookmarks(userId, sort, cursor, pageable);
+        boolean hasNext = result.size() > size;
+        List<Bookmark> bookmarks = hasNext ? result.subList(0, size) : result;
+
+        List<SupportResDTO.SupportSummaryDTO> bookmarkDTOs = bookmarks.stream()
+                .map(bookmark -> SupportResDTO.SupportSummaryDTO.from(
+                        bookmark.getSupportInfo(), true))
+                .toList();
+
+        String nextCursor = hasNext
+                ? createCursor(sort, bookmarks.get(bookmarks.size() - 1))
+                : null;
+
+        return BookmarkResDTO.BookmarkListDTO.builder()
+                .bookmarks(bookmarkDTOs)
+                .page(SupportResDTO.PageDTO.builder()
+                        .nextCursor(nextCursor)
+                        .hasNext(hasNext)
+                        .build())
+                .build();
+    }
+
+    private List<Bookmark> findBookmarks(
+            Long userId,
+            BookmarkSort sort,
+            BookmarkCursor cursor,
+            Pageable pageable) {
+        return switch (sort) {
+            case POPULAR -> bookmarkRepository.findAllByPopular(
+                    userId, cursor.viewCount(), cursor.bookmarkId(), pageable);
+            case LATEST -> bookmarkRepository.findAllByLatest(
+                    userId, cursor.bookmarkId(), pageable);
+            case DEADLINE -> bookmarkRepository.findAllByDeadline(
+                    userId, cursor.applyEndDate(), cursor.bookmarkId(),
+                    LAST_END_DATE, pageable);
+        };
+    }
+
+    private int parseSize(String value) {
+        try {
+            int size = Integer.parseInt(value);
+            if (size < 1 || size > MAX_PAGE_SIZE) {
+                throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            }
+            return size;
+        } catch (NumberFormatException exception) {
+            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+        }
+    }
+
+    private BookmarkCursor parseCursor(BookmarkSort sort, String value) {
+        if (value == null || value.isBlank()) {
+            return BookmarkCursor.initial();
+        }
+
+        try {
+            if (sort == BookmarkSort.LATEST) {
+                long bookmarkId = parseBookmarkId(value);
+                return BookmarkCursor.latest(bookmarkId);
+            }
+
+            int separatorIndex = value.lastIndexOf('_');
+            if (separatorIndex <= 0 || separatorIndex == value.length() - 1) {
+                throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            }
+
+            String sortCursor = value.substring(0, separatorIndex);
+            long bookmarkId = parseBookmarkId(value.substring(separatorIndex + 1));
+
+            if (sort == BookmarkSort.POPULAR) {
+                int viewCount = Integer.parseInt(sortCursor);
+                if (viewCount < 0) {
+                    throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+                }
+                return BookmarkCursor.popular(bookmarkId, viewCount);
+            }
+
+            return BookmarkCursor.deadline(bookmarkId, LocalDate.parse(sortCursor));
+        } catch (NumberFormatException | DateTimeParseException exception) {
+            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+        }
+    }
+
+    private long parseBookmarkId(String value) {
+        long bookmarkId = Long.parseLong(value);
+        if (bookmarkId <= 0) {
+            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+        }
+        return bookmarkId;
+    }
+
+    private String createCursor(BookmarkSort sort, Bookmark bookmark) {
+        return switch (sort) {
+            case POPULAR -> bookmark.getSupportInfo().getViewCount()
+                    + "_" + bookmark.getId();
+            case LATEST -> String.valueOf(bookmark.getId());
+            case DEADLINE -> (bookmark.getSupportInfo().getApplyEndDate() == null
+                    ? LAST_END_DATE
+                    : bookmark.getSupportInfo().getApplyEndDate())
+                    + "_" + bookmark.getId();
+        };
+    }
+
+    private enum BookmarkSort {
+        POPULAR,
+        LATEST,
+        DEADLINE;
+
+        private static BookmarkSort from(String value) {
+            try {
+                return BookmarkSort.valueOf(value);
+            } catch (IllegalArgumentException | NullPointerException exception) {
+                throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            }
+        }
+    }
+
+    private record BookmarkCursor(
+            Long bookmarkId,
+            Integer viewCount,
+            LocalDate applyEndDate
+    ) {
+        private static BookmarkCursor initial() {
+            return new BookmarkCursor(null, null, null);
+        }
+
+        private static BookmarkCursor popular(long bookmarkId, int viewCount) {
+            return new BookmarkCursor(bookmarkId, viewCount, null);
+        }
+
+        private static BookmarkCursor latest(long bookmarkId) {
+            return new BookmarkCursor(bookmarkId, null, null);
+        }
+
+        private static BookmarkCursor deadline(long bookmarkId, LocalDate applyEndDate) {
+            return new BookmarkCursor(bookmarkId, null, applyEndDate);
+        }
     }
 
     private boolean isUniqueConstraintViolation(Throwable throwable) {
