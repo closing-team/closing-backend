@@ -42,6 +42,7 @@ public class ProductListRequest {
 
     @Min(value = 1, message = "조회 크기는 1 이상이어야 합니다.")
     @Max(value = 100, message = "조회 크기는 100 이하여야 합니다.")
+    @NotNull
     private Integer size = 20;
 
     @NotNull(message = "현재 위치의 위도는 필수입니다.")
