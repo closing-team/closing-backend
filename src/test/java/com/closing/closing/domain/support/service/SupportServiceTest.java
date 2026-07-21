@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -34,6 +35,56 @@ class SupportServiceTest {
 
     @InjectMocks
     private SupportService supportService;
+
+    @Test
+    @DisplayName("지원정보 상세 조회 성공 및 조회수 증가")
+    void getSupport_Success_IncreaseViewCount() throws Exception {
+        // given
+        Long supportId = 1L;
+        SupportInfo supportInfo = SupportInfo.builder()
+                .organizationName("소상공인시장진흥공단")
+                .title("2026년 희망리턴패키지 원스톱 폐업지원")
+                .content("폐업 소상공인의 안전한 폐업 및 재기를 지원합니다.")
+                .applyStartDate(LocalDate.of(2026, 1, 1))
+                .applicationPeriod("예산 소진시까지")
+                .externalUrl("https://www.bizinfo.go.kr/support/1")
+                .status(SupportStatus.ONGOING)
+                .viewCount(1520)
+                .build();
+        setField(supportInfo, "id", supportId);
+
+        when(supportRepository.findById(supportId))
+                .thenReturn(Optional.of(supportInfo));
+
+        // when
+        SupportResDTO.SupportDetailDTO result =
+                supportService.getSupport(supportId, null);
+
+        // then
+        assertEquals(supportId, result.supportId());
+        assertEquals("소상공인시장진흥공단", result.organizationName());
+        assertEquals("예산 소진시까지", result.applicationPeriod());
+        assertEquals("https://www.bizinfo.go.kr/support/1", result.externalUrl());
+        assertEquals(1521, result.viewCount());
+        assertEquals(1521, supportInfo.getViewCount());
+        assertFalse(result.isBookmarked());
+    }
+
+    @Test
+    @DisplayName("존재하지 않는 지원정보 상세 조회 시 SUPPORT404 예외 발생")
+    void getSupport_Fail_WhenSupportNotFound() {
+        // given
+        Long supportId = 999L;
+        when(supportRepository.findById(supportId)).thenReturn(Optional.empty());
+
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> supportService.getSupport(supportId, null));
+
+        assertEquals(
+                SupportErrorCode.SUPPORT_NOT_FOUND,
+                exception.getSupportErrorCode());
+    }
 
     @Test
     @DisplayName("지원정보 목록 인기순 조회 성공")

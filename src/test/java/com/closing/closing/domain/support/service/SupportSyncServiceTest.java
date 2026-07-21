@@ -39,8 +39,9 @@ class SupportSyncServiceTest {
 
     @BeforeEach
     void setUp() {
-        lenient().when(supportRepository.findAllByExternalUrlStartingWith(
-                "https://www.bizinfo.go.kr/"))
+        lenient().when(supportRepository
+                .findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+                        "https://www.bizinfo.go.kr/"))
                 .thenReturn(List.of());
     }
 
@@ -70,6 +71,8 @@ class SupportSyncServiceTest {
         when(bizInfoClient.getSupportAnnouncements(100, 1))
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(
                         List.of(closureSupport, normalSupport)));
+        when(supportRepository.findByExternalId(closureSupport.pblancId()))
+                .thenReturn(Optional.empty());
         when(supportRepository.findByExternalUrl(closureSupport.pblancUrl()))
                 .thenReturn(Optional.empty());
 
@@ -85,11 +88,23 @@ class SupportSyncServiceTest {
         assertEquals(1, syncedCount);
         assertEquals("중소벤처기업부", savedSupport.getOrganizationName());
         assertEquals(closureSupport.pblancNm(), savedSupport.getTitle());
-        assertEquals("소상공인의 사업 정리를 지원합니다.", savedSupport.getContent());
+        assertEquals("""
+                소상공인의 사업 정리를 지원합니다.
+
+                지원대상
+                소상공인
+
+                [사업신청 방법]
+                온라인 접수
+
+                [문의처]
+                중소기업통합콜센터""", savedSupport.getContent());
         assertEquals(LocalDate.of(2026, 1, 1), savedSupport.getApplyStartDate());
         assertEquals(LocalDate.of(2099, 12, 31), savedSupport.getApplyEndDate());
         assertEquals(SupportStatus.ONGOING, savedSupport.getStatus());
         assertEquals(1520, savedSupport.getViewCount());
+        assertEquals("PBLN_1", savedSupport.getExternalId());
+        assertEquals("https://apply.example.com", savedSupport.getExternalUrl());
     }
 
     @Test
@@ -117,7 +132,7 @@ class SupportSyncServiceTest {
 
         when(bizInfoClient.getSupportAnnouncements(100, 1))
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of(item)));
-        when(supportRepository.findByExternalUrl(externalUrl))
+        when(supportRepository.findByExternalId(item.pblancId()))
                 .thenReturn(Optional.of(existingSupport));
 
         // when
@@ -126,7 +141,15 @@ class SupportSyncServiceTest {
         // then
         assertEquals(1, syncedCount);
         assertEquals("폐업지원 공고 수정본", existingSupport.getTitle());
-        assertNull(existingSupport.getContent());
+        assertEquals("""
+                지원대상
+                소상공인
+
+                [사업신청 방법]
+                온라인 접수
+
+                [문의처]
+                중소기업통합콜센터""", existingSupport.getContent());
         assertEquals(SupportStatus.CLOSED, existingSupport.getStatus());
         assertEquals(100, existingSupport.getViewCount());
         verify(supportRepository).save(existingSupport);
@@ -163,6 +186,8 @@ class SupportSyncServiceTest {
 
         when(bizInfoClient.getSupportAnnouncements(100, 1))
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of(legacyItem)));
+        when(supportRepository.findByExternalId(legacyItem.announcementId()))
+                .thenReturn(Optional.empty());
         when(supportRepository.findByExternalUrl(externalUrl))
                 .thenReturn(Optional.empty());
 
@@ -207,6 +232,8 @@ class SupportSyncServiceTest {
 
         when(bizInfoClient.getSupportAnnouncements(100, 1))
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of(item)));
+        when(supportRepository.findByExternalId(item.pblancId()))
+                .thenReturn(Optional.empty());
         when(supportRepository.findByExternalUrl(externalUrl))
                 .thenReturn(Optional.empty());
 
@@ -242,8 +269,9 @@ class SupportSyncServiceTest {
 
         when(bizInfoClient.getSupportAnnouncements(100, 1))
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of()));
-        when(supportRepository.findAllByExternalUrlStartingWith(
-                "https://www.bizinfo.go.kr/"))
+        when(supportRepository
+                .findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+                        "https://www.bizinfo.go.kr/"))
                 .thenReturn(List.of(closureSupport, unrelatedSupport));
 
         // when
