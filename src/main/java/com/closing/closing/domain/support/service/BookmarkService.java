@@ -53,6 +53,15 @@ public class BookmarkService {
         }
     }
 
+    @Transactional
+    public void deleteBookmark(Long userId, Long supportId) {
+        Bookmark bookmark = bookmarkRepository.findByUser_IdAndSupportInfo_Id(userId, supportId)
+                .orElseThrow(() -> new SupportException(
+                        SupportErrorCode.BOOKMARK_NOT_FOUND));
+
+        bookmarkRepository.delete(bookmark);
+    }
+
     private boolean isUniqueConstraintViolation(Throwable throwable) {
         Throwable cause = throwable;
         while (cause != null) {
