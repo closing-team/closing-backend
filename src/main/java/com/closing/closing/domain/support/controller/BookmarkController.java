@@ -9,11 +9,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Bookmark", description = "지원정보 북마크 API")
@@ -50,5 +52,21 @@ public class BookmarkController {
 
         bookmarkService.deleteBookmark(userId, supportId);
         return ApiResponse.onSuccess(null);
+    }
+
+    @Operation(summary = "북마크 목록 조회", description = "등록한 지원정보 북마크 목록을 조회합니다.")
+    @GetMapping
+    public ApiResponse<BookmarkResDTO.BookmarkListDTO> getBookmarks(
+            @RequestHeader(value = "Authorization", required = false)
+            String authorizationHeader,
+            @RequestParam(value = "sort", defaultValue = "LATEST") String sort,
+            @RequestParam(value = "cursor", required = false) String cursor,
+            @RequestParam(value = "size", defaultValue = "20") String size
+    ) {
+        // TODO: 인증 연동 후 Authorization 토큰의 사용자 ID를 사용한다.
+        Long userId = 1L;
+
+        return ApiResponse.onSuccess(
+                bookmarkService.getBookmarks(userId, sort, cursor, size));
     }
 }
