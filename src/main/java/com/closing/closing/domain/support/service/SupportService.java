@@ -26,6 +26,20 @@ public class SupportService {
 
     private final SupportRepository supportRepository;
 
+    @Transactional
+    public SupportResDTO.SupportDetailDTO getSupport(
+            Long supportId,
+            String authorizationHeader) {
+        SupportInfo supportInfo = supportRepository.findById(supportId)
+                .orElseThrow(() -> new SupportException(
+                        SupportErrorCode.SUPPORT_NOT_FOUND));
+
+        supportInfo.increaseViewCount();
+
+        // TODO: 인증 추가 후 토큰의 사용자 ID로 북마크 여부 조회 필요
+        return SupportResDTO.SupportDetailDTO.from(supportInfo, false);
+    }
+
     public SupportResDTO.SupportListDTO getSupports(
             String sortValue,
             String cursorValue,
