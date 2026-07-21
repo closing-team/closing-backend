@@ -34,6 +34,13 @@ public class ChatRoomService {
         Product product = productRepository.findByIdAndStatusNot(productId, ProductStatus.DELETED)
                 .orElseThrow(() -> new CustomException(ErrorCode.PRODUCT_NOT_FOUND));
 
+        // 존재하는 사용자인지 조회
+        User buyer = entityManager.find(User.class, userId);
+
+        if (buyer == null || buyer.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
         // 자기 상품인지 확인
         boolean isOwner = product.getSeller().getId().equals(userId);
         if (isOwner) {
@@ -59,19 +66,14 @@ public class ChatRoomService {
         }
 
         // 판매중이거나 예약중이고, 기존 채팅방이 없으면 신규 채팅방 생성
-        return createNewChatRoom(userId, product);
+        return createNewChatRoom(buyer, product);
     }
 
     // 새로운 채팅방을 만드는 메서드
     private ChatRoomCreateResponse createNewChatRoom(
-            Long userId,
+            User buyer,
             Product product
     ) {
-        User buyer = entityManager.find(User.class, userId);
-
-        if (buyer == null || buyer.getDeletedAt() != null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
 
         ChatRoom chatRoom = ChatRoom.builder()
                 .product(product)
