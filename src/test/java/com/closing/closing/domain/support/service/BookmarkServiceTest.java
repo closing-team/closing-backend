@@ -3,6 +3,7 @@ package com.closing.closing.domain.support.service;
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
+import com.closing.closing.domain.support.entity.SupportStatus;
 import com.closing.closing.domain.support.exception.SupportException;
 import com.closing.closing.domain.support.exception.code.SupportErrorCode;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
@@ -17,15 +18,21 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageRequest;
 
 import java.lang.reflect.Field;
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -223,6 +230,170 @@ class BookmarkServiceTest {
                 SupportErrorCode.BOOKMARK_NOT_FOUND,
                 exception.getSupportErrorCode());
         verify(bookmarkRepository, never()).delete(any(Bookmark.class));
+    }
+
+    @Test
+    @DisplayName("북마크 목록 인기순 조회 성공")
+    void getBookmarks_Success_OrderByPopular() throws Exception {
+        // given
+        Long userId = 1L;
+        Bookmark firstBookmark = createBookmark(
+                10L, 1L, "첫 번째 공고", 1520,
+                LocalDate.of(2026, 12, 31));
+        Bookmark secondBookmark = createBookmark(
+                9L, 2L, "두 번째 공고", 1000,
+                LocalDate.of(2026, 11, 30));
+        Bookmark nextBookmark = createBookmark(
+                8L, 3L, "다음 페이지 공고", 500,
+                LocalDate.of(2026, 10, 31));
+        when(bookmarkRepository.findAllByPopular(
+                userId, null, null, PageRequest.of(0, 3)))
+                .thenReturn(List.of(firstBookmark, secondBookmark, nextBookmark));
+
+        // when
+        BookmarkResDTO.BookmarkListDTO result = bookmarkService.getBookmarks(
+                userId, "POPULAR", null, "2");
+
+        // then
+        assertEquals(2, result.bookmarks().size());
+        assertEquals(1L, result.bookmarks().get(0).supportId());
+        assertEquals("첫 번째 공고", result.bookmarks().get(0).title());
+        assertTrue(result.bookmarks().get(0).isBookmarked());
+        assertTrue(result.page().hasNext());
+        assertEquals("1000_9", result.page().nextCursor());
+    }
+
+    @Test
+    @DisplayName("북마크 목록의 다음 페이지가 없으면 커서를 반환하지 않음")
+    void getBookmarks_Success_WithoutNextPage() throws Exception {
+        // given
+        Long userId = 1L;
+        Bookmark bookmark = createBookmark(
+                10L, 1L, "지원 공고", 100,
+                LocalDate.of(2026, 12, 31));
+        when(bookmarkRepository.findAllByLatest(
+                userId, null, PageRequest.of(0, 21)))
+                .thenReturn(List.of(bookmark));
+
+        // when
+        BookmarkResDTO.BookmarkListDTO result = bookmarkService.getBookmarks(
+                userId, "LATEST", null, "20");
+
+        // then
+        assertEquals(1, result.bookmarks().size());
+        assertFalse(result.page().hasNext());
+        assertNull(result.page().nextCursor());
+    }
+
+    @Test
+    @DisplayName("북마크 등록 최신순 커서를 기준으로 다음 목록 조회")
+    void getBookmarks_Success_WithLatestCursor() {
+        // given
+        Long userId = 1L;
+        when(bookmarkRepository.findAllByLatest(
+                userId, 10L, PageRequest.of(0, 21)))
+                .thenReturn(List.of());
+
+        // when
+        bookmarkService.getBookmarks(userId, "LATEST", "10", "20");
+
+        // then
+        verify(bookmarkRepository).findAllByLatest(
+                userId, 10L, PageRequest.of(0, 21));
+    }
+
+    @Test
+    @DisplayName("마감일순 커서를 기준으로 다음 북마크 목록 조회")
+    void getBookmarks_Success_WithDeadlineCursor() {
+        // given
+        Long userId = 1L;
+        LocalDate cursorEndDate = LocalDate.of(2026, 12, 31);
+        when(bookmarkRepository.findAllByDeadline(
+                userId,
+                cursorEndDate,
+                10L,
+                LocalDate.of(9999, 12, 31),
+                PageRequest.of(0, 21)))
+                .thenReturn(List.of());
+
+        // when
+        bookmarkService.getBookmarks(
+                userId, "DEADLINE", "2026-12-31_10", "20");
+
+        // then
+        verify(bookmarkRepository).findAllByDeadline(
+                userId,
+                cursorEndDate,
+                10L,
+                LocalDate.of(9999, 12, 31),
+                PageRequest.of(0, 21));
+    }
+
+    @Test
+    @DisplayName("지원하지 않는 북마크 정렬값이면 COMMON400 예외 발생")
+    void getBookmarks_Fail_WhenSortIsInvalid() {
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> bookmarkService.getBookmarks(
+                        1L, "OLDEST", null, "20"));
+
+        assertEquals(
+                SupportErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getSupportErrorCode());
+    }
+
+    @Test
+    @DisplayName("북마크 커서 형식이 잘못되면 COMMON400 예외 발생")
+    void getBookmarks_Fail_WhenCursorIsInvalid() {
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> bookmarkService.getBookmarks(
+                        1L, "POPULAR", "invalid", "20"));
+
+        assertEquals(
+                SupportErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getSupportErrorCode());
+    }
+
+    @Test
+    @DisplayName("북마크 페이지 크기가 허용 범위를 벗어나면 COMMON400 예외 발생")
+    void getBookmarks_Fail_WhenSizeIsOutOfRange() {
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> bookmarkService.getBookmarks(
+                        1L, "LATEST", null, "101"));
+
+        assertEquals(
+                SupportErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getSupportErrorCode());
+    }
+
+    private Bookmark createBookmark(
+            Long bookmarkId,
+            Long supportId,
+            String title,
+            int viewCount,
+            LocalDate applyEndDate) throws Exception {
+        SupportInfo supportInfo = SupportInfo.builder()
+                .organizationName("소상공인시장진흥공단")
+                .title(title)
+                .applyStartDate(LocalDate.of(2026, 1, 1))
+                .applyEndDate(applyEndDate)
+                .applicationPeriod("2026-01-01 ~ " + applyEndDate)
+                .status(SupportStatus.ONGOING)
+                .viewCount(viewCount)
+                .build();
+        setField(supportInfo, "id", supportId);
+
+        Bookmark bookmark = Bookmark.builder()
+                .user(User.builder()
+                        .kakaoId("kakao-1")
+                        .nickname("클로징")
+                        .build())
+                .supportInfo(supportInfo)
+                .build();
+        setField(bookmark, "id", bookmarkId);
+        return bookmark;
     }
 
     private SupportInfo createSupport(Long supportId) throws Exception {
