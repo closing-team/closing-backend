@@ -39,7 +39,9 @@ out/
 ### Local AI coding assistants ###
 .codex/
 .omx/
+.agents/
 
 ### Local agent instructions ###
 /AGENTS.md
 /agent-docs/
+/notion.md
