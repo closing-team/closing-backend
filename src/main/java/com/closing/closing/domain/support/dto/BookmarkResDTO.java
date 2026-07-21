@@ -5,6 +5,7 @@ import lombok.Builder;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 
 public class BookmarkResDTO {
 
@@ -23,5 +24,12 @@ public class BookmarkResDTO {
                     .createdAt(bookmark.getCreatedAt().atOffset(KOREA_OFFSET))
                     .build();
         }
+    }
+
+    @Builder
+    public record BookmarkListDTO(
+            List<SupportResDTO.SupportSummaryDTO> bookmarks,
+            SupportResDTO.PageDTO page
+    ) {
     }
 }
