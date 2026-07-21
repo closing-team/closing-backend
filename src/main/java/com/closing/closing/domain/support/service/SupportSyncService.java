@@ -117,23 +117,20 @@ public class SupportSyncService {
         String content = createContent(item);
         int viewCount = item.inqireCo() == null ? 0 : item.inqireCo();
 
-        supportRepository.findByExternalId(item.announcementId())
-                .or(() -> supportRepository.findByExternalUrl(item.announcementUrl()))
+        findExistingSupport(item)
                 .ifPresentOrElse(
-                        supportInfo -> {
-                            supportInfo.updateFromExternal(
-                                    organizationName,
-                                    item.announcementTitle(),
-                                    content,
-                                    applyStartDate,
-                                    period.endDate(),
-                                    period.text(),
-                                    item.announcementId(),
-                                    item.applicationUrl(),
-                                    status,
-                                    viewCount);
-                            supportRepository.save(supportInfo);
-                        },
+                        supportInfo -> supportRepository.updateFromExternal(
+                                supportInfo.getId(),
+                                organizationName,
+                                item.announcementTitle(),
+                                content,
+                                applyStartDate,
+                                period.endDate(),
+                                period.text(),
+                                item.announcementId(),
+                                item.applicationUrl(),
+                                status,
+                                viewCount),
                         () -> supportRepository.save(SupportInfo.builder()
                                 .organizationName(organizationName)
                                 .title(item.announcementTitle())
@@ -142,10 +139,17 @@ public class SupportSyncService {
                                 .applyEndDate(period.endDate())
                                 .applicationPeriod(period.text())
                                 .externalId(item.announcementId())
-                                .externalUrl(item.applicationUrl())
+                                .applicationUrl(item.applicationUrl())
                                 .status(status)
                                 .viewCount(viewCount)
                                 .build()));
+    }
+
+    private Optional<SupportInfo> findExistingSupport(
+            BizInfoResDTO.BizInfoItemDTO item) {
+        return supportRepository.findByExternalId(item.announcementId())
+                .or(() -> supportRepository.findLegacyByAnnouncementUrl(
+                        item.announcementUrl()));
     }
 
     private ApplicationPeriod parseApplicationPeriod(String value) {
@@ -236,7 +240,7 @@ public class SupportSyncService {
     private void deleteNonClosureSupports() {
         List<SupportInfo> importedSupports =
                 supportRepository
-                        .findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+                        .findAllByExternalIdIsNotNullOrApplicationUrlStartingWith(
                                 BIZINFO_URL_PREFIX);
         List<SupportInfo> nonClosureSupports = importedSupports.stream()
                 .filter(support -> !isClosureSupport(

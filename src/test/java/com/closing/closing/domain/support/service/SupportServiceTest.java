@@ -26,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class SupportServiceTest {
@@ -47,12 +49,13 @@ class SupportServiceTest {
                 .content("폐업 소상공인의 안전한 폐업 및 재기를 지원합니다.")
                 .applyStartDate(LocalDate.of(2026, 1, 1))
                 .applicationPeriod("예산 소진시까지")
-                .externalUrl("https://www.bizinfo.go.kr/support/1")
+                .applicationUrl("https://www.bizinfo.go.kr/support/1")
                 .status(SupportStatus.ONGOING)
-                .viewCount(1520)
+                .viewCount(1521)
                 .build();
         setField(supportInfo, "id", supportId);
 
+        when(supportRepository.increaseViewCount(supportId)).thenReturn(1);
         when(supportRepository.findById(supportId))
                 .thenReturn(Optional.of(supportInfo));
 
@@ -66,8 +69,10 @@ class SupportServiceTest {
         assertEquals("예산 소진시까지", result.applicationPeriod());
         assertEquals("https://www.bizinfo.go.kr/support/1", result.externalUrl());
         assertEquals(1521, result.viewCount());
-        assertEquals(1521, supportInfo.getViewCount());
         assertFalse(result.isBookmarked());
+        var orderedRepository = inOrder(supportRepository);
+        orderedRepository.verify(supportRepository).increaseViewCount(supportId);
+        orderedRepository.verify(supportRepository).findById(supportId);
     }
 
     @Test
@@ -75,7 +80,7 @@ class SupportServiceTest {
     void getSupport_Fail_WhenSupportNotFound() {
         // given
         Long supportId = 999L;
-        when(supportRepository.findById(supportId)).thenReturn(Optional.empty());
+        when(supportRepository.increaseViewCount(supportId)).thenReturn(0);
 
         // when & then
         SupportException exception = assertThrows(SupportException.class,
@@ -84,6 +89,7 @@ class SupportServiceTest {
         assertEquals(
                 SupportErrorCode.SUPPORT_NOT_FOUND,
                 exception.getSupportErrorCode());
+        verify(supportRepository, never()).findById(supportId);
     }
 
     @Test

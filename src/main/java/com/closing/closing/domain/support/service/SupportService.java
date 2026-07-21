@@ -30,11 +30,14 @@ public class SupportService {
     public SupportResDTO.SupportDetailDTO getSupport(
             Long supportId,
             String authorizationHeader) {
+        int updatedCount = supportRepository.increaseViewCount(supportId);
+        if (updatedCount == 0) {
+            throw new SupportException(SupportErrorCode.SUPPORT_NOT_FOUND);
+        }
+
         SupportInfo supportInfo = supportRepository.findById(supportId)
                 .orElseThrow(() -> new SupportException(
                         SupportErrorCode.SUPPORT_NOT_FOUND));
-
-        supportInfo.increaseViewCount();
 
         // TODO: 인증 추가 후 토큰의 사용자 ID로 북마크 여부 조회 필요
         return SupportResDTO.SupportDetailDTO.from(supportInfo, false);

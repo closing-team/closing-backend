@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +41,7 @@ class SupportSyncServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(supportRepository
-                .findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+                .findAllByExternalIdIsNotNullOrApplicationUrlStartingWith(
                         "https://www.bizinfo.go.kr/"))
                 .thenReturn(List.of());
     }
@@ -73,7 +74,7 @@ class SupportSyncServiceTest {
                         List.of(closureSupport, normalSupport)));
         when(supportRepository.findByExternalId(closureSupport.pblancId()))
                 .thenReturn(Optional.empty());
-        when(supportRepository.findByExternalUrl(closureSupport.pblancUrl()))
+        when(supportRepository.findLegacyByAnnouncementUrl(closureSupport.pblancUrl()))
                 .thenReturn(Optional.empty());
 
         // when
@@ -82,7 +83,8 @@ class SupportSyncServiceTest {
         // then
         ArgumentCaptor<SupportInfo> captor = ArgumentCaptor.forClass(SupportInfo.class);
         verify(supportRepository).save(captor.capture());
-        verify(supportRepository, never()).findByExternalUrl(normalSupport.pblancUrl());
+        verify(supportRepository, never())
+                .findLegacyByAnnouncementUrl(normalSupport.pblancUrl());
 
         SupportInfo savedSupport = captor.getValue();
         assertEquals(1, syncedCount);
@@ -104,22 +106,23 @@ class SupportSyncServiceTest {
         assertEquals(SupportStatus.ONGOING, savedSupport.getStatus());
         assertEquals(1520, savedSupport.getViewCount());
         assertEquals("PBLN_1", savedSupport.getExternalId());
-        assertEquals("https://apply.example.com", savedSupport.getExternalUrl());
+        assertEquals("https://apply.example.com", savedSupport.getApplicationUrl());
     }
 
     @Test
     @DisplayName("이미 저장된 기업마당 공고는 최신 정보로 갱신")
-    void syncClosureSupports_Success_UpdateExistingSupport() {
+    void syncClosureSupports_Success_UpdateExistingSupport() throws Exception {
         // given
         String externalUrl = "https://www.bizinfo.go.kr/support/1";
         SupportInfo existingSupport = SupportInfo.builder()
                 .organizationName("기존 기관")
                 .title("기존 제목")
                 .content("기존 내용")
-                .externalUrl(externalUrl)
+                .applicationUrl(externalUrl)
                 .status(SupportStatus.ONGOING)
                 .viewCount(0)
                 .build();
+        setField(existingSupport, "id", 1L);
         BizInfoResDTO.BizInfoItemDTO item = createItem(
                 "PBLN_1",
                 "폐업지원 공고 수정본",
@@ -140,8 +143,11 @@ class SupportSyncServiceTest {
 
         // then
         assertEquals(1, syncedCount);
-        assertEquals("폐업지원 공고 수정본", existingSupport.getTitle());
-        assertEquals("""
+        verify(supportRepository).updateFromExternal(
+                1L,
+                "중소벤처기업부",
+                "폐업지원 공고 수정본",
+                """
                 지원대상
                 소상공인
 
@@ -149,10 +155,17 @@ class SupportSyncServiceTest {
                 온라인 접수
 
                 [문의처]
-                중소기업통합콜센터""", existingSupport.getContent());
-        assertEquals(SupportStatus.CLOSED, existingSupport.getStatus());
-        assertEquals(100, existingSupport.getViewCount());
-        verify(supportRepository).save(existingSupport);
+                중소기업통합콜센터""",
+                LocalDate.of(2020, 1, 1),
+                LocalDate.of(2020, 12, 31),
+                null,
+                "PBLN_1",
+                "https://apply.example.com",
+                SupportStatus.CLOSED,
+                100);
+        verify(supportRepository, never())
+                .findLegacyByAnnouncementUrl(item.pblancUrl());
+        verify(supportRepository, never()).save(existingSupport);
     }
 
     @Test
@@ -188,7 +201,7 @@ class SupportSyncServiceTest {
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of(legacyItem)));
         when(supportRepository.findByExternalId(legacyItem.announcementId()))
                 .thenReturn(Optional.empty());
-        when(supportRepository.findByExternalUrl(externalUrl))
+        when(supportRepository.findLegacyByAnnouncementUrl(externalUrl))
                 .thenReturn(Optional.empty());
 
         // when
@@ -234,7 +247,7 @@ class SupportSyncServiceTest {
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of(item)));
         when(supportRepository.findByExternalId(item.pblancId()))
                 .thenReturn(Optional.empty());
-        when(supportRepository.findByExternalUrl(externalUrl))
+        when(supportRepository.findLegacyByAnnouncementUrl(externalUrl))
                 .thenReturn(Optional.empty());
 
         // when
@@ -256,21 +269,21 @@ class SupportSyncServiceTest {
                 .organizationName("전북특별자치도")
                 .title("폐업 소상공인 사업정리 지원사업")
                 .content("폐업을 지원합니다.")
-                .externalUrl("https://www.bizinfo.go.kr/support/closure")
+                .applicationUrl("https://www.bizinfo.go.kr/support/closure")
                 .status(SupportStatus.ONGOING)
                 .build();
         SupportInfo unrelatedSupport = SupportInfo.builder()
                 .organizationName("중소벤처기업부")
                 .title("중소기업 R&D 지원사업")
                 .content("신청일 기준 폐업 상태가 아닌 기업")
-                .externalUrl("https://www.bizinfo.go.kr/support/unrelated")
+                .applicationUrl("https://www.bizinfo.go.kr/support/unrelated")
                 .status(SupportStatus.ONGOING)
                 .build();
 
         when(bizInfoClient.getSupportAnnouncements(100, 1))
                 .thenReturn(new BizInfoResDTO.BizInfoResponseDTO(List.of()));
         when(supportRepository
-                .findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+                .findAllByExternalIdIsNotNullOrApplicationUrlStartingWith(
                         "https://www.bizinfo.go.kr/"))
                 .thenReturn(List.of(closureSupport, unrelatedSupport));
 
@@ -313,5 +326,12 @@ class SupportSyncServiceTest {
                 null,
                 null,
                 null);
+    }
+
+    private void setField(SupportInfo supportInfo, String name, Object value)
+            throws Exception {
+        Field field = SupportInfo.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(supportInfo, value);
     }
 }

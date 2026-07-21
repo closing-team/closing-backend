@@ -45,7 +45,7 @@ public class SupportResDTO {
                     .applyStartDate(supportInfo.getApplyStartDate())
                     .applyEndDate(supportInfo.getApplyEndDate())
                     .applicationPeriod(supportInfo.getApplicationPeriod())
-                    .externalUrl(supportInfo.getExternalUrl())
+                    .externalUrl(supportInfo.getApplicationUrl())
                     .status(supportInfo.getStatus())
                     .isBookmarked(isBookmarked)
                     .viewCount(supportInfo.getViewCount())
