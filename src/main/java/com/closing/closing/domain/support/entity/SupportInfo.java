@@ -35,6 +35,9 @@ public class SupportInfo extends BaseEntity {
 
     private String applicationPeriod;
 
+    @Column(unique = true)
+    private String externalId;
+
     @Column(columnDefinition = "TEXT")
     private String externalUrl;
 
@@ -48,7 +51,8 @@ public class SupportInfo extends BaseEntity {
     @Builder
     public SupportInfo(String organizationName, String title, String content,
                        LocalDate applyStartDate, LocalDate applyEndDate,
-                       String applicationPeriod, String externalUrl,
+                       String applicationPeriod, String externalId,
+                       String externalUrl,
                        SupportStatus status, int viewCount) {
         this.organizationName = organizationName;
         this.title = title;
@@ -56,6 +60,7 @@ public class SupportInfo extends BaseEntity {
         this.applyStartDate = applyStartDate;
         this.applyEndDate = applyEndDate;
         this.applicationPeriod = applicationPeriod;
+        this.externalId = externalId;
         this.externalUrl = externalUrl;
         this.status = status;
         this.viewCount = viewCount;
@@ -68,6 +73,8 @@ public class SupportInfo extends BaseEntity {
             LocalDate applyStartDate,
             LocalDate applyEndDate,
             String applicationPeriod,
+            String externalId,
+            String externalUrl,
             SupportStatus status,
             int viewCount) {
         this.organizationName = organizationName;
@@ -76,7 +83,13 @@ public class SupportInfo extends BaseEntity {
         this.applyStartDate = applyStartDate;
         this.applyEndDate = applyEndDate;
         this.applicationPeriod = applicationPeriod;
+        this.externalId = externalId;
+        this.externalUrl = externalUrl;
         this.status = status;
-        this.viewCount = viewCount;
+        this.viewCount = Math.max(this.viewCount, viewCount);
+    }
+
+    public void increaseViewCount() {
+        this.viewCount++;
     }
 }

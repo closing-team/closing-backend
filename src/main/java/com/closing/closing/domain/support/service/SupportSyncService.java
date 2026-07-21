@@ -11,6 +11,7 @@ import org.springframework.web.util.HtmlUtils;
 
 import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -113,10 +114,11 @@ public class SupportSyncService {
                 : period.startDate();
         SupportStatus status = calculateStatus(period.endDate());
         String organizationName = getOrganizationName(item);
-        String content = stripHtml(item.summary());
+        String content = createContent(item);
         int viewCount = item.inqireCo() == null ? 0 : item.inqireCo();
 
-        supportRepository.findByExternalUrl(item.announcementUrl())
+        supportRepository.findByExternalId(item.announcementId())
+                .or(() -> supportRepository.findByExternalUrl(item.announcementUrl()))
                 .ifPresentOrElse(
                         supportInfo -> {
                             supportInfo.updateFromExternal(
@@ -126,6 +128,8 @@ public class SupportSyncService {
                                     applyStartDate,
                                     period.endDate(),
                                     period.text(),
+                                    item.announcementId(),
+                                    item.applicationUrl(),
                                     status,
                                     viewCount);
                             supportRepository.save(supportInfo);
@@ -137,7 +141,8 @@ public class SupportSyncService {
                                 .applyStartDate(applyStartDate)
                                 .applyEndDate(period.endDate())
                                 .applicationPeriod(period.text())
-                                .externalUrl(item.announcementUrl())
+                                .externalId(item.announcementId())
+                                .externalUrl(item.applicationUrl())
                                 .status(status)
                                 .viewCount(viewCount)
                                 .build()));
@@ -208,9 +213,31 @@ public class SupportSyncService {
         return WHITESPACE_PATTERN.matcher(unescaped).replaceAll(" ").trim();
     }
 
+    private String createContent(BizInfoResDTO.BizInfoItemDTO item) {
+        List<String> sections = new ArrayList<>();
+        addSection(sections, null, item.summary());
+        addSection(sections, "지원대상", item.trgetNm());
+        addSection(sections, "[사업신청 방법]", item.reqstMthPapersCn());
+        addSection(sections, "[문의처]", item.refrncNm());
+        return sections.isEmpty() ? null : String.join("\n\n", sections);
+    }
+
+    private void addSection(List<String> sections, String title, String value) {
+        String normalizedValue = stripHtml(value);
+        if (normalizedValue == null || normalizedValue.isBlank()) {
+            return;
+        }
+
+        sections.add(title == null
+                ? normalizedValue
+                : title + "\n" + normalizedValue);
+    }
+
     private void deleteNonClosureSupports() {
         List<SupportInfo> importedSupports =
-                supportRepository.findAllByExternalUrlStartingWith(BIZINFO_URL_PREFIX);
+                supportRepository
+                        .findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+                                BIZINFO_URL_PREFIX);
         List<SupportInfo> nonClosureSupports = importedSupports.stream()
                 .filter(support -> !isClosureSupport(
                         support.getTitle(), support.getContent()))

@@ -59,6 +59,10 @@ public class BizInfoResDTO {
             return firstNotBlank(pblancUrl, link);
         }
 
+        public String applicationUrl() {
+            return firstNotBlank(rceptEngnHmpgUrl, announcementUrl());
+        }
+
         public String organizationName() {
             return firstNotBlank(jrsdInsttNm, author, excInsttNm);
         }

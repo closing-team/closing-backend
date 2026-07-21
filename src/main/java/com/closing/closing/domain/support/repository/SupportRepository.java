@@ -13,9 +13,12 @@ import java.util.Optional;
 
 public interface SupportRepository extends JpaRepository<SupportInfo, Long> {
 
+    Optional<SupportInfo> findByExternalId(String externalId);
+
     Optional<SupportInfo> findByExternalUrl(String externalUrl);
 
-    List<SupportInfo> findAllByExternalUrlStartingWith(String externalUrlPrefix);
+    List<SupportInfo> findAllByExternalIdIsNotNullOrExternalUrlStartingWith(
+            String externalUrlPrefix);
 
     @Query("""
             SELECT s FROM SupportInfo s
