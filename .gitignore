@@ -38,3 +38,12 @@ out/
 
 ### 민감 파일 ###
 **/.env
+### Local AI coding assistants ###
+.codex/
+.omx/
+.agents/
+
+### Local agent instructions ###
+/AGENTS.md
+/agent-docs/
+/notion.md
