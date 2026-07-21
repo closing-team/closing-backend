@@ -16,6 +16,10 @@ public enum SupportErrorCode {
             HttpStatus.CONFLICT,
             "BOOKMARK409",
             "이미 등록된 북마크입니다."),
+    BOOKMARK_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "BOOKMARK404",
+            "북마크를 찾을 수 없습니다."),
     SUPPORT_API_KEY_NOT_FOUND(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "SUPPORT500",
