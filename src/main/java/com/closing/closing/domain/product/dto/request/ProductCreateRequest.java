@@ -31,7 +31,7 @@ public class ProductCreateRequest {
     private Integer price;
 
     @NotEmpty(message = "거래 방법을 하나 이상 선택해야 합니다.")
-    private List<TradeMethod> tradeMethods;
+    private List<@NotNull TradeMethod> tradeMethods;
 
     // 직거래 시 필수, 직거래 아닌 경우 null 가능
     private String tradeLocation;

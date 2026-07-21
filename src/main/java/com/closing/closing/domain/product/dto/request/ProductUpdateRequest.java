@@ -30,7 +30,7 @@ public class ProductUpdateRequest {
     private Integer price;
 
     @NotEmpty(message = "거래 방식은 필수입니다.")
-    private List<TradeMethod> tradeMethods;
+    private List<@NotNull TradeMethod> tradeMethods;
 
     private String tradeLocation;
 
