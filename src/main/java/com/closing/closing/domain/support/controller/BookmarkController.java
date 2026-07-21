@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -34,5 +36,19 @@ public class BookmarkController {
 
         return ApiResponse.onSuccess(
                 bookmarkService.createBookmark(userId, request.supportId()));
+    }
+
+    @Operation(summary = "북마크 삭제", description = "등록한 지원정보 북마크를 삭제합니다.")
+    @DeleteMapping("/{supportId}")
+    public ApiResponse<Void> deleteBookmark(
+            @RequestHeader(value = "Authorization", required = false)
+            String authorizationHeader,
+            @PathVariable("supportId") Long supportId
+    ) {
+        // TODO: 인증 연동 후 Authorization 토큰의 사용자 ID를 사용한다.
+        Long userId = 1L;
+
+        bookmarkService.deleteBookmark(userId, supportId);
+        return ApiResponse.onSuccess(null);
     }
 }
