@@ -12,6 +12,10 @@ public enum SupportErrorCode {
             HttpStatus.NOT_FOUND,
             "SUPPORT404",
             "존재하지 않는 지원정보입니다."),
+    BOOKMARK_ALREADY_EXISTS(
+            HttpStatus.CONFLICT,
+            "BOOKMARK409",
+            "이미 등록된 북마크입니다."),
     SUPPORT_API_KEY_NOT_FOUND(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "SUPPORT500",
