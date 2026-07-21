@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum SupportErrorCode {
     SUPPORT_INVALID_QUERY(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
+    BOOKMARK_INVALID_QUERY(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
     SUPPORT_NOT_FOUND(
             HttpStatus.NOT_FOUND,
             "SUPPORT404",
