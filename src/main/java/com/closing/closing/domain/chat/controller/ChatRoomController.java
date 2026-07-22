@@ -53,4 +53,16 @@ public class ChatRoomController {
         return ApiResponse.onSuccess(response);
     }
 
+    @PatchMapping("{chatRoomId}/read")
+    public ApiResponse<Void> readMessages(
+            @PathVariable("chatRoomId") Long chatRoomId
+    ) {
+        // TODO: 인증
+        Long userId = 1L;
+
+        chatMessageService.readMessage(userId, chatRoomId);
+
+        return ApiResponse.onSuccess(null);
+    }
+
 }

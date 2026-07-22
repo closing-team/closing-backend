@@ -32,6 +32,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ImageStorage imageStorage;
 
+    // 메세지 보내기
     @Transactional
     public MessageSendResponse sendMessage(
             Long userId,
@@ -235,5 +236,22 @@ public class ChatMessageService {
                 );
             }
         }
+    }
+
+    // 메세지 읽음 처리
+    @Transactional
+    public void readMessage(
+            Long userId,
+            Long chatRoomId
+    ) {
+        // 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        // 채팅방 참여자인지 확인
+        findSender(chatRoom, userId);
+
+        // 채팅방 내 상대방이 보낸 모든 미읽음 메세지를 읽음으로 처리
+        chatMessageRepository.markAllUnreadMessagesAsRead(chatRoomId, userId);
     }
 }
