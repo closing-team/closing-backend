@@ -33,8 +33,13 @@ public class SupportInfo extends BaseEntity {
 
     private LocalDate applyEndDate;
 
-    @Column(columnDefinition = "TEXT")
-    private String externalUrl;
+    private String applicationPeriod;
+
+    @Column(unique = true)
+    private String externalId;
+
+    @Column(name = "external_url", columnDefinition = "TEXT")
+    private String applicationUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -46,14 +51,18 @@ public class SupportInfo extends BaseEntity {
     @Builder
     public SupportInfo(String organizationName, String title, String content,
                        LocalDate applyStartDate, LocalDate applyEndDate,
-                       String externalUrl, SupportStatus status) {
+                       String applicationPeriod, String externalId,
+                       String applicationUrl,
+                       SupportStatus status, int viewCount) {
         this.organizationName = organizationName;
         this.title = title;
         this.content = content;
         this.applyStartDate = applyStartDate;
         this.applyEndDate = applyEndDate;
-        this.externalUrl = externalUrl;
+        this.applicationPeriod = applicationPeriod;
+        this.externalId = externalId;
+        this.applicationUrl = applicationUrl;
         this.status = status;
+        this.viewCount = viewCount;
     }
-
 }
