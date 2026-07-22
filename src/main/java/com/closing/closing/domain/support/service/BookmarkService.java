@@ -36,6 +36,10 @@ public class BookmarkService {
 
     @Transactional
     public BookmarkResDTO.BookmarkCreateDTO createBookmark(Long userId, Long supportId) {
+        if (supportId == null || supportId <= 0) {
+            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+        }
+
         SupportInfo supportInfo = supportRepository.findById(supportId)
                 .orElseThrow(() -> new SupportException(
                         SupportErrorCode.SUPPORT_NOT_FOUND));

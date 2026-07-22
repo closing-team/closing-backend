@@ -92,6 +92,32 @@ class BookmarkServiceTest {
     }
 
     @Test
+    @DisplayName("북마크 추가 시 지원정보 ID가 null이면 COMMON400 예외 발생")
+    void createBookmark_Fail_WhenSupportIdIsNull() {
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> bookmarkService.createBookmark(1L, null));
+
+        assertEquals(
+                SupportErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getSupportErrorCode());
+        verify(supportRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("북마크 추가 시 지원정보 ID가 양수가 아니면 COMMON400 예외 발생")
+    void createBookmark_Fail_WhenSupportIdIsNotPositive() {
+        // when & then
+        SupportException exception = assertThrows(SupportException.class,
+                () -> bookmarkService.createBookmark(1L, 0L));
+
+        assertEquals(
+                SupportErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getSupportErrorCode());
+        verify(supportRepository, never()).findById(any());
+    }
+
+    @Test
     @DisplayName("존재하지 않는 지원정보 북마크 시 SUPPORT404 예외 발생")
     void createBookmark_Fail_WhenSupportNotFound() {
         // given
