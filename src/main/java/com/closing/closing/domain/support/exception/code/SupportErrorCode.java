@@ -8,10 +8,19 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum SupportErrorCode {
     SUPPORT_INVALID_QUERY(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
+    BOOKMARK_INVALID_QUERY(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
     SUPPORT_NOT_FOUND(
             HttpStatus.NOT_FOUND,
             "SUPPORT404",
             "존재하지 않는 지원정보입니다."),
+    BOOKMARK_ALREADY_EXISTS(
+            HttpStatus.CONFLICT,
+            "BOOKMARK409",
+            "이미 등록된 북마크입니다."),
+    BOOKMARK_NOT_FOUND(
+            HttpStatus.NOT_FOUND,
+            "BOOKMARK404",
+            "북마크를 찾을 수 없습니다."),
     SUPPORT_API_KEY_NOT_FOUND(
             HttpStatus.INTERNAL_SERVER_ERROR,
             "SUPPORT500",
