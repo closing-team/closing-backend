@@ -41,7 +41,10 @@ public enum ErrorCode {
     AI_LLM_GENERATION_FAILED(HttpStatus.FAILED_DEPENDENCY, "AI424", "일정 생성에 실패했습니다."),
     AI_LLM_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI504", "AI 응답 시간이 초과되었습니다."),
     AI_RAG_SEARCH_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI503", "참고 문서 검색에 실패했습니다."),
-    AI_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_SESSION404", "존재하지 않는 세션입니다.");
+    AI_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_SESSION404", "존재하지 않는 세션입니다."),
+    AI_SESSION_ALREADY_CONFIRMED(
+            HttpStatus.CONFLICT, "AI_SESSION409", "이미 확정되어 더 이상 대화를 진행할 수 없는 세션입니다."),
+    AI_EMPTY_MESSAGE(HttpStatus.BAD_REQUEST, "AI_MESSAGE400", "대화 메시지 내용이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
