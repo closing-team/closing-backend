@@ -33,7 +33,9 @@ public class Task extends BaseEntity {
 
     private LocalDate endDate;
 
-    private LocalTime taskTime;
+    private LocalTime startTime;
+
+    private LocalTime endTime;
 
     @Column(nullable = false)
     private boolean isCompleted = false;
@@ -47,14 +49,41 @@ public class Task extends BaseEntity {
 
     @Builder
     public Task(BusinessRegistration registration, String title, LocalDate startDate,
-                LocalDate endDate, LocalTime taskTime, TaskSource source, String description) {
+                LocalDate endDate, LocalTime startTime, LocalTime endTime, TaskSource source, String description) {
         this.registration = registration;
         this.title = title;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.taskTime = taskTime;
+        this.startTime = startTime;
+        this.endTime = endTime;
         this.source = source;
         this.description = description;
+    }
+
+    public void update(String title, LocalDate startDate, LocalDate endDate,
+                       LocalTime startTime, LocalTime endTime, String description) {
+        if (title != null && !title.isBlank()) {
+            this.title = title;
+        }
+        if (startDate != null) {
+            this.startDate = startDate;
+        }
+        if (endDate != null) {
+            this.endDate = endDate;
+        }
+        if (startTime != null) {
+            this.startTime = startTime;
+        }
+        if (endTime != null) {
+            this.endTime = endTime;
+        }
+        if (description != null) {
+            this.description = description;
+        }
+    }
+
+    public void complete(boolean isCompleted) {
+        this.isCompleted = isCompleted;
     }
 
 }

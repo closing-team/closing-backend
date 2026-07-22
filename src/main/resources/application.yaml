@@ -24,3 +24,11 @@ jwt:
   access-token-expiry: 1800000
   refresh-token-expiry: 1209600000
   signup-token-expiry: 600000
+storage:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    region: ${AWS_REGION:ap-northeast-2}
+ai:
+  server:
+    base-url: ${AI_SERVER_BASE_URL:https://closing-ai-production.up.railway.app}
+    timeout-seconds: 90
