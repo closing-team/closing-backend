@@ -10,6 +10,7 @@ import com.closing.closing.domain.ai.dto.AiMessageDto;
 import com.closing.closing.domain.ai.dto.AiSessionConfirmedResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionDetailResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionGeneratedResponseDto;
+import com.closing.closing.domain.ai.dto.AiSessionMessageResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionNewResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionRequestDto;
 import com.closing.closing.domain.ai.dto.AiSessionResponseDto;
@@ -133,6 +134,77 @@ public class AiSessionService {
                         .toList();
         return new AiSessionConfirmedResponseDto(
                 aiSession.getSessionId(), aiSession.getStatus().name(), confirmedTasks);
+    }
+
+    public AiSessionMessageResponseDto sendMessage(String sessionId, String message) {
+        validateMessage(message);
+
+        AiSession aiSession =
+                aiSessionRepository
+                        .findBySessionId(sessionId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+
+        // 확정된 세션은 더 이상 대화를 이어갈 수 없음
+        if (aiSession.getStatus() == AiSessionStatus.ALREADY_CONFIRMED) {
+            throw new CustomException(ErrorCode.AI_SESSION_ALREADY_CONFIRMED);
+        }
+
+        List<AiMessageDto> storedMessages = deserialize(aiSession.getMessages(), new TypeReference<>() {});
+        List<AiMessageDto> messages = new ArrayList<>(storedMessages);
+        messages.add(new AiMessageDto(USER_ROLE, message));
+
+        int nextTurnCount = aiSession.getTurnCount() + 1;
+        AiGenerateResponseDto aiResponse = requestGenerate(messages, nextTurnCount);
+
+        if (aiResponse.isFinal()) {
+            return saveGeneratedMessage(aiSession, messages, nextTurnCount, aiResponse.tasks());
+        }
+        return saveNewMessage(aiSession, messages, nextTurnCount, aiResponse.aiMessage());
+    }
+
+    private void validateMessage(String message) {
+        // 빈 메시지는 AI 서버 호출 전에 차단
+        if (message == null || message.isBlank()) {
+            throw new CustomException(ErrorCode.AI_EMPTY_MESSAGE);
+        }
+    }
+
+    private AiSessionMessageResponseDto saveNewMessage(
+            AiSession aiSession, List<AiMessageDto> messages, int turnCount, String aiMessage) {
+        // AI 서버는 세션을 기억 못 하므로 AI 응답도 이력에 저장
+        List<AiMessageDto> updatedMessages = new ArrayList<>(messages);
+        updatedMessages.add(new AiMessageDto(AI_ROLE, aiMessage));
+
+        AiSession updatedSession =
+                AiSession.builder()
+                        .sessionId(aiSession.getSessionId())
+                        .status(AiSessionStatus.NEW)
+                        .messages(serialize(updatedMessages))
+                        .turnCount(turnCount)
+                        .generatedTasks(aiSession.getGeneratedTasks())
+                        .confirmedTaskIds(aiSession.getConfirmedTaskIds())
+                        .build();
+        aiSessionRepository.save(updatedSession);
+
+        return new AiSessionMessageResponseDto(aiMessage, turnCount, false, null);
+    }
+
+    private AiSessionMessageResponseDto saveGeneratedMessage(
+            AiSession aiSession, List<AiMessageDto> messages, int turnCount, List<AiGenerateTaskDto> tasks) {
+        List<AiGeneratedTaskDto> generatedTasks = tasks.stream().map(this::assignTempId).toList();
+
+        AiSession updatedSession =
+                AiSession.builder()
+                        .sessionId(aiSession.getSessionId())
+                        .status(AiSessionStatus.GENERATED)
+                        .messages(serialize(messages))
+                        .turnCount(turnCount)
+                        .generatedTasks(serialize(generatedTasks))
+                        .confirmedTaskIds(aiSession.getConfirmedTaskIds())
+                        .build();
+        aiSessionRepository.save(updatedSession);
+
+        return new AiSessionMessageResponseDto(null, turnCount, true, generatedTasks);
     }
 
     private List<Long> parseConfirmedTaskIds(String confirmedTaskIdsJson) {
