@@ -25,6 +25,11 @@ public enum ErrorCode {
     INVALID_RETAINED_IMAGES(HttpStatus.BAD_REQUEST, "INVALID_RETAINED_IMAGES", "올바르지 않은 기존 이미지입니다."),
     //INVALID_IMAGE_FORMAT(HttpStatus.BAD_REQUEST, "INVALID_IMAGE_FORMAT", "지원하지 않는 이미지 형식입니다.");
 
+    // 채팅 에러코드
+    SELF_CHAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "SELF_CHAT_NOT_ALLOWED", "본인 상품에 문의할 수 없습니다."),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "사용자를 찾을 수 없습니다."),
+    CHAT_PRODUCT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "CHAT_PRODUCT_NOT_AVAILABLE", "판매 완료된 상품에 문의할 수 없습니다."),
+
     AI_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AI401", "인증 토큰이 없거나 만료되었습니다."),
     AI_EMPTY_INITIAL_INPUT(HttpStatus.BAD_REQUEST, "AI_INITIAL_INPUT400", "초기 상황 입력 내용이 없습니다."),
     AI_LLM_GENERATION_FAILED(HttpStatus.FAILED_DEPENDENCY, "AI424", "일정 생성에 실패했습니다."),
