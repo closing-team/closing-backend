@@ -1,11 +1,16 @@
 package com.closing.closing.domain.ai.service;
 
+import com.closing.closing.domain.ai.dto.AiConfirmedTaskDto;
 import com.closing.closing.domain.ai.dto.AiErrorResponseDto;
 import com.closing.closing.domain.ai.dto.AiGenerateRequestDto;
 import com.closing.closing.domain.ai.dto.AiGenerateResponseDto;
 import com.closing.closing.domain.ai.dto.AiGenerateTaskDto;
 import com.closing.closing.domain.ai.dto.AiGeneratedTaskDto;
 import com.closing.closing.domain.ai.dto.AiMessageDto;
+import com.closing.closing.domain.ai.dto.AiSessionConfirmedResponseDto;
+import com.closing.closing.domain.ai.dto.AiSessionDetailResponseDto;
+import com.closing.closing.domain.ai.dto.AiSessionGeneratedResponseDto;
+import com.closing.closing.domain.ai.dto.AiSessionNewResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionRequestDto;
 import com.closing.closing.domain.ai.dto.AiSessionResponseDto;
 import com.closing.closing.domain.ai.entity.AiSession;
@@ -14,6 +19,7 @@ import com.closing.closing.domain.ai.repository.AiSessionRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +54,7 @@ public class AiSessionService {
         AiGenerateResponseDto aiResponse = requestGenerate(messages, INITIAL_TURN_COUNT);
         String sessionId = UUID.randomUUID().toString();
 
+        // 첫 턴에 바로 일정이 확정되는 경우
         if (aiResponse.isFinal()) {
             return saveGeneratedSession(sessionId, messages, aiResponse.tasks());
         }
@@ -55,6 +62,7 @@ public class AiSessionService {
     }
 
     private AiSessionResponseDto saveNewSession(String sessionId, List<AiMessageDto> messages, String aiMessage) {
+        // AI 서버는 세션을 기억 못 하므로 AI응답을 이력에 저장
         List<AiMessageDto> updatedMessages = new ArrayList<>(messages);
         updatedMessages.add(new AiMessageDto(AI_ROLE, aiMessage));
 
@@ -89,7 +97,62 @@ public class AiSessionService {
                 sessionId, AiSessionStatus.GENERATED.name(), null, INITIAL_TURN_COUNT, generatedTasks);
     }
 
+    public AiSessionDetailResponseDto getSession(String sessionId) {
+        AiSession aiSession =
+                aiSessionRepository
+                        .findBySessionId(sessionId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+
+        // status별로 응답 구조가 달라서 분리
+        return switch (aiSession.getStatus()) {
+            case NEW -> toNewResponse(aiSession);
+            case GENERATED -> toGeneratedResponse(aiSession);
+            case ALREADY_CONFIRMED -> toConfirmedResponse(aiSession);
+        };
+    }
+
+    private AiSessionNewResponseDto toNewResponse(AiSession aiSession) {
+        List<AiMessageDto> messages = deserialize(aiSession.getMessages(), new TypeReference<>() {});
+        return new AiSessionNewResponseDto(
+                aiSession.getSessionId(), aiSession.getStatus().name(), aiSession.getTurnCount(), messages);
+    }
+
+    private AiSessionGeneratedResponseDto toGeneratedResponse(AiSession aiSession) {
+        List<AiGeneratedTaskDto> generatedTasks =
+                deserialize(aiSession.getGeneratedTasks(), new TypeReference<>() {});
+        return new AiSessionGeneratedResponseDto(
+                aiSession.getSessionId(), aiSession.getStatus().name(), generatedTasks);
+    }
+
+    // tasks 도메인 미확정 - 확정 후 재검증 필요
+    private AiSessionConfirmedResponseDto toConfirmedResponse(AiSession aiSession) {
+        List<Long> confirmedTaskIds = parseConfirmedTaskIds(aiSession.getConfirmedTaskIds());
+        List<AiConfirmedTaskDto> confirmedTasks =
+                confirmedTaskIds.stream()
+                        .map(taskId -> new AiConfirmedTaskDto(taskId, null, null, null, null, null, null))
+                        .toList();
+        return new AiSessionConfirmedResponseDto(
+                aiSession.getSessionId(), aiSession.getStatus().name(), confirmedTasks);
+    }
+
+    private List<Long> parseConfirmedTaskIds(String confirmedTaskIdsJson) {
+        // confirm API가 아직 없어 null일 수 있음
+        if (confirmedTaskIdsJson == null) {
+            return List.of();
+        }
+        return deserialize(confirmedTaskIdsJson, new TypeReference<>() {});
+    }
+
+    private <T> T deserialize(String json, TypeReference<T> typeReference) {
+        try {
+            return objectMapper.readValue(json, typeReference);
+        } catch (JsonProcessingException e) {
+            throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private AiGeneratedTaskDto assignTempId(AiGenerateTaskDto task) {
+        // 아직 Task로 저장 전이라 DB id가 없어 임시 id 부여
         return new AiGeneratedTaskDto(
                 UUID.randomUUID().toString(),
                 task.title(),
@@ -101,6 +164,7 @@ public class AiSessionService {
     }
 
     private void validateInitialInput(String initialInput) {
+        // 빈 입력은 AI 서버 호출 전에 차단
         if (initialInput == null || initialInput.isBlank()) {
             throw new CustomException(ErrorCode.AI_EMPTY_INITIAL_INPUT);
         }
@@ -119,6 +183,7 @@ public class AiSessionService {
                 .block();
     }
 
+    // AI 서버 에러를 도메인 에러로 변환
     private Mono<? extends Throwable> handleAiServerError(ClientResponse response) {
         return response.bodyToMono(AiErrorResponseDto.class)
                 .defaultIfEmpty(new AiErrorResponseDto(null))
@@ -134,6 +199,7 @@ public class AiSessionService {
         };
     }
 
+    // JSON 직렬화 실패 처리를 공용화
     private String serialize(Object value) {
         try {
             return objectMapper.writeValueAsString(value);
