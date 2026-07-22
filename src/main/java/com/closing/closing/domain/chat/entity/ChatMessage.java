@@ -28,6 +28,7 @@ public class ChatMessage extends BaseCreatedEntity {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    // messageType에 따라 텍스트가 될수도, imageUrl이 될수도
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 

@@ -29,6 +29,12 @@ public enum ErrorCode {
     SELF_CHAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "SELF_CHAT_NOT_ALLOWED", "본인 상품에 문의할 수 없습니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "사용자를 찾을 수 없습니다."),
     CHAT_PRODUCT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "CHAT_PRODUCT_NOT_AVAILABLE", "판매 완료된 상품에 문의할 수 없습니다."),
+    EMPTY_CHAT_MESSAGE(HttpStatus.BAD_REQUEST, "EMPTY_CHAT_MESSAGE", "메시지 내용 또는 이미지를 전달해야 합니다."),
+    CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT_ROOM_NOT_FOUND", "채팅방을 찾을 수 없습니다."),
+    CHAT_ROOM_ACCESS_FORBIDDEN(HttpStatus.FORBIDDEN, "CHAT_ROOM_ACCESS_FORBIDDEN", "해당 채팅방에 참여할 수 없습니다."),
+    MULTIPLE_CHAT_MESSAGE_TYPES(HttpStatus.BAD_REQUEST, "MULTIPLE_CHAT_MESSAGE_TYPES", "텍스트와 이미지는 동시에 전송할 수 없습니다."),
+    //INVALID_CHAT_IMAGE_COUNT(HttpStatus.BAD_REQUEST, "INVALID_CHAT_IMAGE_COUNT", "채팅 이미지는 1장 이상 10장 이하로 전송해야 합니다."),
+    INVALID_CHAT_IMAGE(HttpStatus.BAD_REQUEST, "INVALID_CHAT_IMAGE", "잘못된 이미지 형식입니다."),
 
     AI_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AI401", "인증 토큰이 없거나 만료되었습니다."),
     AI_EMPTY_INITIAL_INPUT(HttpStatus.BAD_REQUEST, "AI_INITIAL_INPUT400", "초기 상황 입력 내용이 없습니다."),
