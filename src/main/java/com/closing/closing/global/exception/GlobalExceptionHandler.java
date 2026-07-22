@@ -2,6 +2,7 @@ package com.closing.closing.global.exception;
 
 import com.closing.closing.global.response.ApiResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -23,5 +24,26 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure(
                         ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                         e.getMessage(), null));
+    }
+
+    // 검증 예외 처리
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(
+            MethodArgumentNotValidException exception
+    ) {
+        String message = exception.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .findFirst()
+                .map(fieldError -> fieldError.getDefaultMessage())
+                .orElse(ErrorCode.BAD_REQUEST.getMessage());
+
+        return ResponseEntity
+                .status(ErrorCode.BAD_REQUEST.getHttpStatus())
+                .body(ApiResponse.onFailure(
+                        ErrorCode.BAD_REQUEST.getCode(),
+                        message,
+                        null
+                ));
     }
 }
