@@ -122,12 +122,12 @@ public class ProductController {
 
     // 내 상품 조회
     @GetMapping("/me")
-    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getMyProducts(
+    public ApiResponse<MyProductListResponse> getMyProducts(
             @Valid @ModelAttribute MyProductListRequest request
     ) {
         // TODO: 인증
         Long userId = 1L;
-        ProductListResponse<ProductSummaryResponse, Long> response =
+        MyProductListResponse response =
                 productService.getMyProducts(userId, request);
 
         return ApiResponse.onSuccess(response);

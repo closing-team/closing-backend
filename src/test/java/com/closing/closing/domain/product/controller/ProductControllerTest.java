@@ -191,17 +191,26 @@ class ProductControllerTest {
     @DisplayName("내 상품과 찜 상품 목록 API가 커서 응답을 반환한다")
     void memberProductLists_success() throws Exception {
         // 사용자 전용 목록 endpoint와 커서 메타데이터를 검증한다.
-        ProductListResponse<ProductSummaryResponse, Long> response =
+        MyProductListResponse myProductResponse =
+                new MyProductListResponse(
+                        List.of(),
+                        new MyProductCountsResponse(4L, 2L, 0L, 2L),
+                        CursorPageResponse.of(30L, true)
+                );
+        ProductListResponse<ProductSummaryResponse, Long> bookmarkResponse =
                 new ProductListResponse<>(List.of(), CursorPageResponse.of(30L, true));
         given(productService.getMyProducts(eq(1L), any(MyProductListRequest.class)))
-                .willReturn(response);
+                .willReturn(myProductResponse);
         given(productService.getBookmarkedProducts(eq(1L), any(ProductBookmarkListRequest.class)))
-                .willReturn(response);
+                .willReturn(bookmarkResponse);
 
         mockMvc.perform(get("/api/v1/products/me").param("size", "20"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.page.nextCursor").value(30))
-                .andExpect(jsonPath("$.data.page.hasNext").value(true));
+                .andExpect(jsonPath("$.data.page.hasNext").value(true))
+                .andExpect(jsonPath("$.data.counts.total").value(4))
+                .andExpect(jsonPath("$.data.counts.selling").value(2))
+                .andExpect(jsonPath("$.data.counts.soldOut").value(2));
 
         mockMvc.perform(get("/api/v1/products/bookmarks")
                         .param("size", "20")

@@ -6,9 +6,11 @@ import com.closing.closing.domain.product.entity.Product;
 import com.closing.closing.domain.product.entity.ProductBookmark;
 import com.closing.closing.domain.product.entity.ProductStatus;
 import com.closing.closing.domain.product.entity.TradeMethod;
+import com.closing.closing.domain.product.repository.ProductBookmarkCountProjection;
 import com.closing.closing.domain.product.repository.ProductBookmarkRepository;
 import com.closing.closing.domain.product.repository.ProductDistanceProjection;
 import com.closing.closing.domain.product.repository.ProductRepository;
+import com.closing.closing.domain.product.repository.ProductStatusCountProjection;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
@@ -203,7 +205,7 @@ public class ProductService {
         return ProductBookmarkResponse.from(product, false);
     }
 
-    public ProductListResponse<ProductSummaryResponse, Long> getMyProducts(
+    public MyProductListResponse getMyProducts(
             Long userId,
             MyProductListRequest request
     ) {
@@ -230,19 +232,63 @@ public class ProductService {
                 ? products.subList(0, request.getSize())
                 : products;
 
+        List<Long> productIds = pageProducts.stream()
+                .map(Product::getId)
+                .toList();
+
         Set<Long> bookmarkedProductIds = findBookmarkedProductIds(
                 userId,
-                pageProducts.stream().map(Product::getId).toList()
+                productIds
         );
 
-        List<ProductSummaryResponse> productResponses =
+        Map<Long, Long> bookmarkCounts = productIds.isEmpty()
+                ? Map.of()
+                : productBookmarkRepository.findBookmarkCounts(productIds)
+                        .stream()
+                        .collect(Collectors.toMap(
+                                ProductBookmarkCountProjection::getProductId,
+                                ProductBookmarkCountProjection::getBookmarkCount
+                        ));
+
+        List<MyProductSummaryResponse> productResponses =
                 pageProducts.stream()
-                        .map(product -> ProductSummaryResponse.from(
+                        .map(product -> MyProductSummaryResponse.from(
                                 product,
-                                null,
-                                bookmarkedProductIds.contains(product.getId())
+                                bookmarkedProductIds.contains(product.getId()),
+                                bookmarkCounts.getOrDefault(product.getId(), 0L)
                         ))
                         .toList();
+
+        Map<ProductStatus, Long> countsByStatus =
+                new EnumMap<>(ProductStatus.class);
+
+        List<ProductStatusCountProjection> statusCounts =
+                productRepository.findMyProductCounts(
+                        userId,
+                        ProductStatus.DELETED
+                );
+
+        for (ProductStatusCountProjection statusCount : statusCounts) {
+            countsByStatus.put(
+                    statusCount.getStatus(),
+                    statusCount.getProductCount()
+            );
+        }
+
+        long sellingCount =
+                countsByStatus.getOrDefault(ProductStatus.SELLING, 0L);
+        long reservedCount =
+                countsByStatus.getOrDefault(ProductStatus.RESERVED, 0L);
+        long soldOutCount =
+                countsByStatus.getOrDefault(ProductStatus.SOLD_OUT, 0L);
+
+        MyProductCountsResponse countsResponse =
+                new MyProductCountsResponse(
+                        sellingCount + reservedCount + soldOutCount,
+                        sellingCount,
+                        reservedCount,
+                        soldOutCount
+                );
 
         Long nextCursor = hasNext && !pageProducts.isEmpty()
                 ? pageProducts.get(pageProducts.size() - 1).getId()
@@ -251,8 +297,9 @@ public class ProductService {
         CursorPageResponse<Long> pageResponse =
                 CursorPageResponse.of(nextCursor, hasNext);
 
-        return new ProductListResponse<>(
+        return new MyProductListResponse(
                 productResponses,
+                countsResponse,
                 pageResponse
         );
 
