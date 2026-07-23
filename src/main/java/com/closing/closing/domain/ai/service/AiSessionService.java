@@ -148,6 +148,10 @@ public class AiSessionService {
         if (aiSession.getStatus() == AiSessionStatus.ALREADY_CONFIRMED) {
             throw new CustomException(ErrorCode.AI_SESSION_ALREADY_CONFIRMED);
         }
+        // 이미 일정이 생성된 세션도 대화를 이어가면 status가 NEW로 되돌아가며 생성된 일정이 유실되므로 차단
+        if (aiSession.getStatus() == AiSessionStatus.GENERATED) {
+            throw new CustomException(ErrorCode.AI_SESSION_TASKS_GENERATED);
+        }
 
         List<AiMessageDto> storedMessages =
                 deserialize(aiSession.getMessages(), new TypeReference<>() {});
