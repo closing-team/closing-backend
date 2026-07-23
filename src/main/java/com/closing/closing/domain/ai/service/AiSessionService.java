@@ -149,7 +149,8 @@ public class AiSessionService {
             throw new CustomException(ErrorCode.AI_SESSION_ALREADY_CONFIRMED);
         }
 
-        List<AiMessageDto> storedMessages = deserialize(aiSession.getMessages(), new TypeReference<>() {});
+        List<AiMessageDto> storedMessages =
+                deserialize(aiSession.getMessages(), new TypeReference<>() {});
         List<AiMessageDto> messages = new ArrayList<>(storedMessages);
         messages.add(new AiMessageDto(USER_ROLE, message));
 
@@ -190,7 +191,10 @@ public class AiSessionService {
     }
 
     private AiSessionMessageResponseDto saveGeneratedMessage(
-            AiSession aiSession, List<AiMessageDto> messages, int turnCount, List<AiGenerateTaskDto> tasks) {
+            AiSession aiSession,
+            List<AiMessageDto> messages,
+            int turnCount,
+            List<AiGenerateTaskDto> tasks) {
         List<AiGeneratedTaskDto> generatedTasks = tasks.stream().map(this::assignTempId).toList();
 
         AiSession updatedSession =
