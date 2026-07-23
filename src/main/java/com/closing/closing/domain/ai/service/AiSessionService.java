@@ -28,6 +28,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -74,7 +75,7 @@ public class AiSessionService {
                         .messages(serialize(updatedMessages))
                         .turnCount(INITIAL_TURN_COUNT)
                         .build();
-        aiSessionRepository.save(aiSession);
+        saveSession(aiSession);
 
         return new AiSessionResponseDto(
                 sessionId, AiSessionStatus.NEW.name(), aiMessage, INITIAL_TURN_COUNT, null);
@@ -92,7 +93,7 @@ public class AiSessionService {
                         .turnCount(INITIAL_TURN_COUNT)
                         .generatedTasks(serialize(generatedTasks))
                         .build();
-        aiSessionRepository.save(aiSession);
+        saveSession(aiSession);
 
         return new AiSessionResponseDto(
                 sessionId, AiSessionStatus.GENERATED.name(), null, INITIAL_TURN_COUNT, generatedTasks);
@@ -188,8 +189,9 @@ public class AiSessionService {
                         .turnCount(turnCount)
                         .generatedTasks(aiSession.getGeneratedTasks())
                         .confirmedTaskIds(aiSession.getConfirmedTaskIds())
+                        .version(aiSession.getVersion())
                         .build();
-        aiSessionRepository.save(updatedSession);
+        saveSession(updatedSession);
 
         return new AiSessionMessageResponseDto(aiMessage, turnCount, false, null);
     }
@@ -209,8 +211,9 @@ public class AiSessionService {
                         .turnCount(turnCount)
                         .generatedTasks(serialize(generatedTasks))
                         .confirmedTaskIds(aiSession.getConfirmedTaskIds())
+                        .version(aiSession.getVersion())
                         .build();
-        aiSessionRepository.save(updatedSession);
+        saveSession(updatedSession);
 
         return new AiSessionMessageResponseDto(null, turnCount, true, generatedTasks);
     }
@@ -285,6 +288,15 @@ public class AiSessionService {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             throw new CustomException(ErrorCode.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // 동시에 같은 세션에 저장 요청이 들어와 버전이 충돌하면 먼저 저장한 내용이 덮어써지는 대신 에러로 알림
+    private void saveSession(AiSession aiSession) {
+        try {
+            aiSessionRepository.save(aiSession);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new CustomException(ErrorCode.AI_SESSION_CONCURRENT_UPDATE);
         }
     }
 }
