@@ -56,4 +56,13 @@ public class User extends BaseEntity {
         this.email = email;
         this.profileImageUrl = profileImageUrl;
     }
+
+    public void updateInfo(String name, String phone) {
+        this.name = name;
+        this.phone = phone;
+    }
+
+    public void withdraw() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
