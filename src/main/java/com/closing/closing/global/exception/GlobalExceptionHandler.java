@@ -22,7 +22,7 @@ public class GlobalExceptionHandler {
         String message = e.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getDefaultMessage())
                 .findFirst()
-                .orElse("잘못된 요청입니다.");
+                .orElse(ErrorCode.BAD_REQUEST.getMessage());
         return ResponseEntity
                 .status(ErrorCode.BAD_REQUEST.getHttpStatus())
                 .body(ApiResponse.onFailure(ErrorCode.BAD_REQUEST.getCode(), message, null));
@@ -35,26 +35,5 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure(
                         ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                         e.getMessage(), null));
-    }
-
-    // 검증 예외 처리
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(
-            MethodArgumentNotValidException exception
-    ) {
-        String message = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .findFirst()
-                .map(fieldError -> fieldError.getDefaultMessage())
-                .orElse(ErrorCode.BAD_REQUEST.getMessage());
-
-        return ResponseEntity
-                .status(ErrorCode.BAD_REQUEST.getHttpStatus())
-                .body(ApiResponse.onFailure(
-                        ErrorCode.BAD_REQUEST.getCode(),
-                        message,
-                        null
-                ));
     }
 }
