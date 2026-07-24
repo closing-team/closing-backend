@@ -33,12 +33,6 @@ public class ChatRoom extends BaseCreatedEntity {
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 
-    @Column(nullable = false)
-    private Long buyerLastReadMessageId = 0L;
-
-    @Column(nullable = false)
-    private Long sellerLastReadMessageId = 0L;
-
     @Builder
     public ChatRoom(Product product, User buyer, User seller) {
         this.product = product;

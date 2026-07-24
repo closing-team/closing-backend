@@ -1,6 +1,9 @@
 package com.closing.closing.domain.chat.service;
 
+import com.closing.closing.domain.chat.dto.request.MessageHistoryRequest;
 import com.closing.closing.domain.chat.dto.request.MessageRequest;
+import com.closing.closing.domain.chat.dto.response.MessageHistoryListResponse;
+import com.closing.closing.domain.chat.dto.response.MessageResponse;
 import com.closing.closing.domain.chat.dto.response.MessageSendResponse;
 import com.closing.closing.domain.chat.entity.ChatMessage;
 import com.closing.closing.domain.chat.entity.ChatRoom;
@@ -10,14 +13,18 @@ import com.closing.closing.domain.chat.repository.ChatRoomRepository;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
+import com.closing.closing.domain.product.dto.response.CursorPageResponse;
 import com.closing.closing.global.storage.ImageStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -32,6 +39,7 @@ public class ChatMessageService {
     private final ChatMessageRepository chatMessageRepository;
     private final ImageStorage imageStorage;
 
+    // 메세지 보내기
     @Transactional
     public MessageSendResponse sendMessage(
             Long userId,
@@ -235,5 +243,75 @@ public class ChatMessageService {
                 );
             }
         }
+    }
+
+    // 메세지 읽음 처리
+    @Transactional
+    public void readMessage(
+            Long userId,
+            Long chatRoomId
+    ) {
+        // 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        // 채팅방 참여자인지 확인
+        findSender(chatRoom, userId);
+
+        // 채팅방 내 상대방이 보낸 모든 미읽음 메세지를 읽음으로 처리
+        chatMessageRepository.markAllUnreadMessagesAsRead(chatRoomId, userId);
+    }
+
+    // 메세지 히스토리 조회
+    public MessageHistoryListResponse<Long> getMessageHistoryList(
+            MessageHistoryRequest request,
+            Long chatRoomId,
+            Long userId
+    ) {
+
+        // 채팅방 조회
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+
+        // 채팅방 참여자인지 확인
+        findSender(chatRoom, userId);
+
+        Pageable pageable = PageRequest.of(0, request.getSize() + 1);
+
+        List<ChatMessage> chatMessageList = chatMessageRepository.findMessageHistory(
+                chatRoomId,
+                request.getCursor(),
+                pageable
+        );
+
+        // 요청한 개수보다 한 개 더 조회됐다면 다음 페이지가 존재
+        boolean hasNext = chatMessageList.size() > request.getSize();
+
+        // hasNext 확인용으로 추가 조회한 마지막 메시지는 응답에서 제외
+        List<ChatMessage> pageMessages = new ArrayList<>(
+                hasNext
+                        ? chatMessageList.subList(0, request.getSize())
+                        : chatMessageList
+        );
+
+        // 현재 페이지에서 가장 오래된 메시지 ID를 다음 조회의 커서로 사용
+        Long nextCursor = hasNext && !pageMessages.isEmpty()
+                ? pageMessages.get(pageMessages.size() - 1).getId()
+                : null;
+
+        // Repository는 최신순으로 조회하므로 화면 표시를 위해 오래된순으로 변경
+        Collections.reverse(pageMessages);
+
+        List<MessageResponse> messageResponses = pageMessages.stream()
+                .map(message -> MessageResponse.from(message, userId))
+                .toList();
+
+        CursorPageResponse<Long> pageResponse =
+                CursorPageResponse.of(nextCursor, hasNext);
+
+        return new MessageHistoryListResponse<>(
+                messageResponses,
+                pageResponse
+        );
     }
 }
