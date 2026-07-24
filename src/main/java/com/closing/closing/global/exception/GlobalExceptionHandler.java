@@ -17,6 +17,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse("잘못된 요청입니다.");
+        return ResponseEntity
+                .status(ErrorCode.BAD_REQUEST.getHttpStatus())
+                .body(ApiResponse.onFailure(ErrorCode.BAD_REQUEST.getCode(), message, null));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
         return ResponseEntity
