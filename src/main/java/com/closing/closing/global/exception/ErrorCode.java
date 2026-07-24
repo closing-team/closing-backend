@@ -10,6 +10,16 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500", "서버 오류가 발생했습니다."),
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "COMMON401", "인증이 필요합니다."),
+
+    AUTH_KAKAO(HttpStatus.UNAUTHORIZED, "AUTH_KAKAO401", "카카오 인증에 실패했습니다."),
+    AUTH_KAKAO_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_KAKAO_EXPIRED401", "카카오 토큰이 만료되었습니다."),
+    AUTH_SIGNUP_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_SIGNUP_TOKEN404", "유효하지 않거나 만료된 가입 토큰입니다."),
+
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "사용자를 찾을 수 없습니다."),
+    USER_PHONE_INVALID(HttpStatus.BAD_REQUEST, "USER_PHONE_INVALID400", "전화번호 형식이 올바르지 않습니다."),
+
+    TERM_REQUIRED(HttpStatus.BAD_REQUEST, "TERM_REQUIRED400", "필수 약관에 모두 동의해야 합니다."),
+
     // 중고거래 에러코드
     PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "PRODUCT404", "상품을 찾을 수 없습니다."),
     TRADE_LOCATION_REQUIRED(HttpStatus.BAD_REQUEST, "TRADE_LOCATION_REQUIRED", "직거래 장소를 입력해야 합니다."),
@@ -27,7 +37,6 @@ public enum ErrorCode {
 
     // 채팅 에러코드
     SELF_CHAT_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "SELF_CHAT_NOT_ALLOWED", "본인 상품에 문의할 수 없습니다."),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "사용자를 찾을 수 없습니다."),
     CHAT_PRODUCT_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "CHAT_PRODUCT_NOT_AVAILABLE", "판매 완료된 상품에 문의할 수 없습니다."),
     EMPTY_CHAT_MESSAGE(HttpStatus.BAD_REQUEST, "EMPTY_CHAT_MESSAGE", "메시지 내용 또는 이미지를 전달해야 합니다."),
     CHAT_ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "CHAT_ROOM_NOT_FOUND", "채팅방을 찾을 수 없습니다."),

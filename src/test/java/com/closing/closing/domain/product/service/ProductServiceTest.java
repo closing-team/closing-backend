@@ -2,11 +2,14 @@ package com.closing.closing.domain.product.service;
 
 import com.closing.closing.domain.product.dto.request.*;
 import com.closing.closing.domain.product.dto.response.ProductListResponse;
+import com.closing.closing.domain.product.dto.response.MyProductListResponse;
 import com.closing.closing.domain.product.dto.response.ProductSummaryResponse;
 import com.closing.closing.domain.product.dto.response.ProductUpdateResponse;
 import com.closing.closing.domain.product.entity.*;
+import com.closing.closing.domain.product.repository.ProductBookmarkCountProjection;
 import com.closing.closing.domain.product.repository.ProductBookmarkRepository;
 import com.closing.closing.domain.product.repository.ProductRepository;
+import com.closing.closing.domain.product.repository.ProductStatusCountProjection;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
@@ -272,13 +275,40 @@ class ProductServiceTest {
         given(productBookmarkRepository.findBookmarkedProductIds(USER_ID, List.of(30L, 20L)))
                 .willReturn(Set.of(20L));
 
-        ProductListResponse<ProductSummaryResponse, Long> response =
+        ProductBookmarkCountProjection firstBookmarkCount =
+                mock(ProductBookmarkCountProjection.class);
+        ProductBookmarkCountProjection secondBookmarkCount =
+                mock(ProductBookmarkCountProjection.class);
+        given(firstBookmarkCount.getProductId()).willReturn(30L);
+        given(firstBookmarkCount.getBookmarkCount()).willReturn(3L);
+        given(secondBookmarkCount.getProductId()).willReturn(20L);
+        given(secondBookmarkCount.getBookmarkCount()).willReturn(2L);
+        given(productBookmarkRepository.findBookmarkCounts(List.of(30L, 20L)))
+                .willReturn(List.of(firstBookmarkCount, secondBookmarkCount));
+
+        ProductStatusCountProjection sellingCount =
+                mock(ProductStatusCountProjection.class);
+        ProductStatusCountProjection soldOutCount =
+                mock(ProductStatusCountProjection.class);
+        given(sellingCount.getStatus()).willReturn(ProductStatus.SELLING);
+        given(sellingCount.getProductCount()).willReturn(2L);
+        given(soldOutCount.getStatus()).willReturn(ProductStatus.SOLD_OUT);
+        given(soldOutCount.getProductCount()).willReturn(1L);
+        given(productRepository.findMyProductCounts(USER_ID, ProductStatus.DELETED))
+                .willReturn(List.of(sellingCount, soldOutCount));
+
+        MyProductListResponse response =
                 productService.getMyProducts(USER_ID, request);
 
         assertThat(response.getProducts()).hasSize(2);
         assertThat(response.getPage().isHasNext()).isTrue();
         assertThat(response.getPage().getNextCursor()).isEqualTo(20L);
         assertThat(response.getProducts().get(1).isBookmarked()).isTrue();
+        assertThat(response.getProducts().get(0).getBookmarkCount()).isEqualTo(3L);
+        assertThat(response.getCounts().getTotal()).isEqualTo(3L);
+        assertThat(response.getCounts().getSelling()).isEqualTo(2L);
+        assertThat(response.getCounts().getReserved()).isZero();
+        assertThat(response.getCounts().getSoldOut()).isEqualTo(1L);
     }
 
     @Test
