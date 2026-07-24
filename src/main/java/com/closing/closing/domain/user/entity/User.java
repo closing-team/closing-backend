@@ -56,4 +56,8 @@ public class User extends BaseEntity {
         this.email = email;
         this.profileImageUrl = profileImageUrl;
     }
+
+    public void withdraw() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
