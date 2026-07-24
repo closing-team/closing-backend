@@ -419,4 +419,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             @Param("cursorId") Long cursorId,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT product.status AS status,
+               COUNT(product.id) AS productCount
+        FROM Product product
+        WHERE product.seller.id = :userId
+          AND product.status <> :deletedStatus
+        GROUP BY product.status
+        """)
+    List<ProductStatusCountProjection> findMyProductCounts(
+            @Param("userId") Long userId,
+            @Param("deletedStatus") ProductStatus deletedStatus
+    );
 }

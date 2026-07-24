@@ -4,6 +4,7 @@ import com.closing.closing.domain.auth.dto.request.KakaoLoginRequest;
 import com.closing.closing.domain.auth.dto.request.SignupRequest;
 import com.closing.closing.domain.auth.dto.response.LoginResponse;
 import com.closing.closing.domain.auth.dto.response.SignupResponse;
+import com.closing.closing.domain.auth.dto.response.LoginResponse;
 import com.closing.closing.domain.auth.service.AuthService;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;

@@ -45,4 +45,15 @@ public interface ProductBookmarkRepository extends JpaRepository<ProductBookmark
             @Param("cursor") Long cursor,
             Pageable pageable
     );
+
+    @Query("""
+        SELECT bookmark.product.id AS productId,
+               COUNT(bookmark.id) AS bookmarkCount
+        FROM ProductBookmark bookmark
+        WHERE bookmark.product.id IN :productIds
+        GROUP BY bookmark.product.id
+        """)
+    List<ProductBookmarkCountProjection> findBookmarkCounts(
+            @Param("productIds") List<Long> productIds
+    );
 }

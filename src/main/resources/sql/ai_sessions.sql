@@ -5,6 +5,10 @@ CREATE TABLE IF NOT EXISTS ai_sessions (
     messages TEXT NOT NULL,
     turn_count INTEGER NOT NULL,
     generated_tasks TEXT,
+    confirmed_task_ids TEXT,
     created_at TIMESTAMP,
     updated_at TIMESTAMP
 );
+
+-- 기존 테이블에 confirmed_task_ids 컬럼 추가용 마이그레이션
+ALTER TABLE ai_sessions ADD COLUMN IF NOT EXISTS confirmed_task_ids TEXT;
