@@ -45,12 +45,18 @@ public enum ErrorCode {
     //INVALID_CHAT_IMAGE_COUNT(HttpStatus.BAD_REQUEST, "INVALID_CHAT_IMAGE_COUNT", "채팅 이미지는 1장 이상 10장 이하로 전송해야 합니다."),
     INVALID_CHAT_IMAGE(HttpStatus.BAD_REQUEST, "INVALID_CHAT_IMAGE", "잘못된 이미지 형식입니다."),
 
+    // AI세션 에러코드
     AI_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AI401", "인증 토큰이 없거나 만료되었습니다."),
     AI_EMPTY_INITIAL_INPUT(HttpStatus.BAD_REQUEST, "AI_INITIAL_INPUT400", "초기 상황 입력 내용이 없습니다."),
     AI_LLM_GENERATION_FAILED(HttpStatus.FAILED_DEPENDENCY, "AI424", "일정 생성에 실패했습니다."),
     AI_LLM_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI504", "AI 응답 시간이 초과되었습니다."),
     AI_RAG_SEARCH_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI503", "참고 문서 검색에 실패했습니다."),
-    AI_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_SESSION404", "존재하지 않는 세션입니다.");
+    AI_SESSION_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_SESSION404", "존재하지 않는 세션입니다."),
+    AI_SESSION_ALREADY_CONFIRMED(HttpStatus.CONFLICT, "AI_SESSION409", "이미 확정되어 더 이상 대화를 진행할 수 없는 세션입니다."),
+    AI_EMPTY_MESSAGE(HttpStatus.BAD_REQUEST, "AI_MESSAGE400", "대화 메시지 내용이 없습니다."),
+    AI_SESSION_TASKS_GENERATED(HttpStatus.CONFLICT, "AI_SESSION_TASKS409", "이미 일정이 생성되어 더 이상 대화를 진행할 수 없는 세션입니다."),
+    AI_SESSION_CONCURRENT_UPDATE(
+            HttpStatus.CONFLICT, "AI_SESSION_CONCURRENT409", "다른 요청이 동시에 처리되고 있어 다시 시도해야 합니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
