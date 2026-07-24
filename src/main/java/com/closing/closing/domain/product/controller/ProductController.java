@@ -5,6 +5,8 @@ import com.closing.closing.domain.product.dto.response.*;
 import com.closing.closing.domain.product.service.ProductImageService;
 import com.closing.closing.domain.product.service.ProductService;
 import com.closing.closing.global.response.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -13,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@Tag(name = "Product", description = "중고거래 상품 API")
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
@@ -22,6 +25,10 @@ public class ProductController {
     private final ProductImageService productImageService;
 
     // 상품 다건 조회
+    @Operation(
+            summary = "상품 목록 조회",
+            description = "검색어, 카테고리, 거래 방식, 정렬 조건을 적용하여 상품 목록을 커서 기반으로 조회합니다."
+    )
     @GetMapping
     public ApiResponse<ProductListResponse<ProductSummaryResponse, String>> getProducts(
             @Valid @ModelAttribute ProductListRequest request
@@ -36,6 +43,10 @@ public class ProductController {
     }
 
     // 상품 조회
+    @Operation(
+            summary = "상품 상세 조회",
+            description = "상품 ID에 해당하는 상품의 상세 정보를 조회합니다."
+    )
     @GetMapping("/{productId}")
     public ApiResponse<ProductResponse> getProduct(
             @PathVariable("productId") Long productId,
@@ -52,6 +63,10 @@ public class ProductController {
     }
 
     // 상품 등록
+    @Operation(
+            summary = "상품 등록",
+            description = "상품 등록에 필요한 정보를 바탕으로 상품을 등록합니다."
+    )
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProductCreateResponse> createProduct(
             @Valid @RequestPart("request") ProductCreateRequest request,
@@ -68,6 +83,10 @@ public class ProductController {
     }
 
     // 상품 삭제
+    @Operation(
+            summary = "상품 삭제",
+            description = "상품 id를 이용해 상품 한 개를 삭제합니다."
+    )
     @DeleteMapping("/{productId}")
     public ApiResponse<Void> deleteProduct(
             @PathVariable Long productId
@@ -81,6 +100,10 @@ public class ProductController {
     }
 
     // 상품 상태 수정
+    @Operation(
+            summary = "상품 상태 수정",
+            description = "상품 id를 이용해 상품 한 개의 상태를 수정합니다. (SELLING, RESERVED, SOLD_OUT)"
+    )
     @PatchMapping("/{productId}/status")
     public ApiResponse<ProductStatusResponse> updateProductStatus(
             @PathVariable("productId") Long productId,
@@ -95,6 +118,10 @@ public class ProductController {
     }
 
     // 상품 찜 추가
+    @Operation(
+            summary = "상품 북마크 추가",
+            description = "상품 id를 이용해 상품을 북마크 목록에 추가합니다."
+    )
     @PostMapping("/{productId}/bookmark")
     public ApiResponse<ProductBookmarkResponse> createBookmark(
             @PathVariable("productId") Long productId
@@ -108,6 +135,10 @@ public class ProductController {
     }
 
     // 상품 찜 삭제
+    @Operation(
+            summary = "상품 북마크 삭제",
+            description = "상품 id를 이용해 상품을 북마크 목록에서 삭제합니다."
+    )
     @DeleteMapping("/{productId}/bookmark")
     public ApiResponse<ProductBookmarkResponse> deleteBookmark(
             @PathVariable("productId") Long productId
@@ -121,6 +152,10 @@ public class ProductController {
     }
 
     // 내 상품 조회
+    @Operation(
+            summary = "내 상품 조회",
+            description = "현재 사용자가 등록한 상품 목록을 조회합니다."
+    )
     @GetMapping("/me")
     public ApiResponse<MyProductListResponse> getMyProducts(
             @Valid @ModelAttribute MyProductListRequest request
@@ -134,6 +169,10 @@ public class ProductController {
     }
 
     // 찜 상품 조회
+    @Operation(
+            summary = "북마크 상품 조회",
+            description = "현재 사용자가 북마크한 상품 목록을 조회합니다."
+    )
     @GetMapping("/bookmarks")
     public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
             @Valid @ModelAttribute ProductBookmarkListRequest request
@@ -147,6 +186,10 @@ public class ProductController {
     }
 
     // 상품 수정
+    @Operation(
+            summary = "상품 수정",
+            description = "상품 ID에 해당하는 상품 정보와 이미지를 수정합니다."
+    )
     @PutMapping(value = "/{productId}",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProductUpdateResponse> updateProduct(
