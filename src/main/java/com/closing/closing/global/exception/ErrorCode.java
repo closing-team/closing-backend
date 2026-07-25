@@ -56,7 +56,9 @@ public enum ErrorCode {
     AI_EMPTY_MESSAGE(HttpStatus.BAD_REQUEST, "AI_MESSAGE400", "대화 메시지 내용이 없습니다."),
     AI_SESSION_TASKS_GENERATED(HttpStatus.CONFLICT, "AI_SESSION_TASKS409", "이미 일정이 생성되어 더 이상 대화를 진행할 수 없는 세션입니다."),
     AI_SESSION_CONCURRENT_UPDATE(
-            HttpStatus.CONFLICT, "AI_SESSION_CONCURRENT409", "다른 요청이 동시에 처리되고 있어 다시 시도해야 합니다.");
+            HttpStatus.CONFLICT, "AI_SESSION_CONCURRENT409", "다른 요청이 동시에 처리되고 있어 다시 시도해야 합니다."),
+    AI_TEMP_TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_TEMP_TASK404", "존재하지 않는 임시 일정입니다."),
+    AI_EMPTY_TASK_TITLE(HttpStatus.BAD_REQUEST, "AI_TASK_TITLE400", "일정 제목이 비어있습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

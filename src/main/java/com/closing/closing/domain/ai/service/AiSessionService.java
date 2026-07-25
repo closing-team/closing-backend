@@ -14,6 +14,7 @@ import com.closing.closing.domain.ai.dto.AiSessionMessageResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionNewResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionRequestDto;
 import com.closing.closing.domain.ai.dto.AiSessionResponseDto;
+import com.closing.closing.domain.ai.dto.AiSessionTaskUpdateRequestDto;
 import com.closing.closing.domain.ai.entity.AiSession;
 import com.closing.closing.domain.ai.entity.AiSessionStatus;
 import com.closing.closing.domain.ai.repository.AiSessionRepository;
@@ -216,6 +217,67 @@ public class AiSessionService {
         saveSession(updatedSession);
 
         return new AiSessionMessageResponseDto(null, turnCount, true, generatedTasks);
+    }
+
+    public AiGeneratedTaskDto updateTask(
+            String sessionId, String tempId, AiSessionTaskUpdateRequestDto request) {
+        AiSession aiSession =
+                aiSessionRepository
+                        .findBySessionId(sessionId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+
+        // 아직 일정이 생성되지 않아 요청한 tempId가 존재할 수 없음
+        if (aiSession.getStatus() == AiSessionStatus.NEW) {
+            throw new CustomException(ErrorCode.AI_TEMP_TASK_NOT_FOUND);
+        }
+        // 확정된 세션의 임시 일정은 더 이상 수정할 수 없음
+        if (aiSession.getStatus() == AiSessionStatus.ALREADY_CONFIRMED) {
+            throw new CustomException(ErrorCode.AI_SESSION_ALREADY_CONFIRMED);
+        }
+
+        List<AiGeneratedTaskDto> generatedTasks =
+                deserialize(aiSession.getGeneratedTasks(), new TypeReference<>() {});
+        generatedTasks.stream()
+                .filter(task -> task.tempId().equals(tempId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.AI_TEMP_TASK_NOT_FOUND));
+
+        validateTaskTitle(request.title());
+
+        AiGeneratedTaskDto updatedTask =
+                new AiGeneratedTaskDto(
+                        tempId,
+                        request.title(),
+                        request.startDate(),
+                        request.startTime(),
+                        request.endDate(),
+                        request.endTime(),
+                        request.memo());
+        List<AiGeneratedTaskDto> updatedTasks =
+                generatedTasks.stream()
+                        .map(task -> task.tempId().equals(tempId) ? updatedTask : task)
+                        .toList();
+
+        AiSession updatedSession =
+                AiSession.builder()
+                        .sessionId(aiSession.getSessionId())
+                        .status(AiSessionStatus.GENERATED)
+                        .messages(aiSession.getMessages())
+                        .turnCount(aiSession.getTurnCount())
+                        .generatedTasks(serialize(updatedTasks))
+                        .confirmedTaskIds(aiSession.getConfirmedTaskIds())
+                        .version(aiSession.getVersion())
+                        .build();
+        saveSession(updatedSession);
+
+        return updatedTask;
+    }
+
+    private void validateTaskTitle(String title) {
+        // 빈 제목은 저장 전에 차단
+        if (title == null || title.isBlank()) {
+            throw new CustomException(ErrorCode.AI_EMPTY_TASK_TITLE);
+        }
     }
 
     private List<Long> parseConfirmedTaskIds(String confirmedTaskIdsJson) {
