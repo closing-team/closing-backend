@@ -273,6 +273,49 @@ public class AiSessionService {
         return updatedTask;
     }
 
+    public void deleteTask(String sessionId, String tempId) {
+        AiSession aiSession =
+                aiSessionRepository
+                        .findBySessionId(sessionId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+
+        // 아직 일정이 생성되지 않아 요청한 tempId가 존재할 수 없음
+        if (aiSession.getStatus() == AiSessionStatus.NEW) {
+            throw new CustomException(ErrorCode.AI_TEMP_TASK_NOT_FOUND);
+        }
+
+        // 확정된 세션의 임시 일정은 더 이상 삭제할 수 없음
+        if (aiSession.getStatus() == AiSessionStatus.ALREADY_CONFIRMED) {
+            throw new CustomException(ErrorCode.AI_SESSION_ALREADY_CONFIRMED);
+        }
+
+        List<AiGeneratedTaskDto> generatedTasks =
+                deserialize(aiSession.getGeneratedTasks(), new TypeReference<>() {});
+
+        generatedTasks.stream()
+                .filter(task -> task.tempId().equals(tempId))
+                .findFirst()
+                .orElseThrow(() -> new CustomException(ErrorCode.AI_TEMP_TASK_NOT_FOUND));
+
+        List<AiGeneratedTaskDto> updatedTasks =
+                generatedTasks.stream()
+                        .filter(task -> !task.tempId().equals(tempId))
+                        .toList();
+
+        AiSession updatedSession =
+                AiSession.builder()
+                        .sessionId(aiSession.getSessionId())
+                        .status(AiSessionStatus.GENERATED)
+                        .messages(aiSession.getMessages())
+                        .turnCount(aiSession.getTurnCount())
+                        .generatedTasks(serialize(updatedTasks))
+                        .confirmedTaskIds(aiSession.getConfirmedTaskIds())
+                        .version(aiSession.getVersion())
+                        .build();
+
+        saveSession(updatedSession);
+    }
+
     private void validateTaskTitle(String title) {
         // 빈 제목은 저장 전에 차단
         if (title == null || title.isBlank()) {
