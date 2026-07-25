@@ -30,7 +30,7 @@ public class AiSessionController {
     //세션 시작
     @PostMapping
     public ApiResponse<AiSessionResponseDto> createSession(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestBody AiSessionRequestDto request) {
         return ApiResponse.onSuccess(aiSessionService.createSession(authorizationHeader, request));
     }
@@ -38,7 +38,7 @@ public class AiSessionController {
     //세션 조회
     @GetMapping("/{sessionId}")
     public ApiResponse<AiSessionDetailResponseDto> getSession(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable String sessionId) {
         return ApiResponse.onSuccess(aiSessionService.getSession(authorizationHeader, sessionId));
     }
@@ -46,7 +46,7 @@ public class AiSessionController {
     //메시지 전송
     @PostMapping("/{sessionId}/messages")
     public ApiResponse<AiSessionMessageResponseDto> sendMessage(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable String sessionId,
             @RequestBody AiSessionMessageRequestDto request) {
         return ApiResponse.onSuccess(
@@ -56,7 +56,7 @@ public class AiSessionController {
     //임시 일정 수정
     @PatchMapping("/{sessionId}/tasks/{tempId}")
     public ApiResponse<AiGeneratedTaskDto> updateTask(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable String sessionId,
             @PathVariable String tempId,
             @RequestBody AiSessionTaskUpdateRequestDto request) {
@@ -67,7 +67,7 @@ public class AiSessionController {
     //임시 일정 삭제
     @DeleteMapping("/{sessionId}/tasks/{tempId}")
     public ApiResponse<Void> deleteTask(
-            @RequestHeader("Authorization") String authorizationHeader,
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable String sessionId,
             @PathVariable String tempId) {
         aiSessionService.deleteTask(authorizationHeader, sessionId, tempId);
