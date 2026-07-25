@@ -20,11 +20,13 @@ import com.closing.closing.domain.ai.entity.AiSessionStatus;
 import com.closing.closing.domain.ai.repository.AiSessionRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
+import com.closing.closing.global.jwt.JwtProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
@@ -47,8 +49,19 @@ public class AiSessionService {
     private final WebClient aiWebClient;
     private final AiSessionRepository aiSessionRepository;
     private final ObjectMapper objectMapper;
+    private final JwtProvider jwtProvider;
 
-    public AiSessionResponseDto createSession(AiSessionRequestDto request) {
+    public AiSessionResponseDto createSession(
+            String authorizationHeader, AiSessionRequestDto request) {
+        Long userId = extractUserId(authorizationHeader);
+
+        // 유저당 확정 세션은 하나만 허용 - 이미 있으면 새로 만들지 않고 기존 세션을 반환
+        Optional<AiSession> existingConfirmedSession =
+                aiSessionRepository.findConfirmedByUserId(userId);
+        if (existingConfirmedSession.isPresent()) {
+            return toExistingConfirmedResponse(existingConfirmedSession.get());
+        }
+
         validateInitialInput(request.initialInput());
 
         List<AiMessageDto> messages = new ArrayList<>();
@@ -59,12 +72,22 @@ public class AiSessionService {
 
         // 첫 턴에 바로 일정이 확정되는 경우
         if (aiResponse.isFinal()) {
-            return saveGeneratedSession(sessionId, messages, aiResponse.tasks());
+            return saveGeneratedSession(sessionId, userId, messages, aiResponse.tasks());
         }
-        return saveNewSession(sessionId, messages, aiResponse.aiMessage());
+        return saveNewSession(sessionId, userId, messages, aiResponse.aiMessage());
     }
 
-    private AiSessionResponseDto saveNewSession(String sessionId, List<AiMessageDto> messages, String aiMessage) {
+    private AiSessionResponseDto toExistingConfirmedResponse(AiSession aiSession) {
+        return new AiSessionResponseDto(
+                aiSession.getSessionId(),
+                AiSessionStatus.ALREADY_CONFIRMED.name(),
+                null,
+                aiSession.getTurnCount(),
+                null);
+    }
+
+    private AiSessionResponseDto saveNewSession(
+            String sessionId, Long userId, List<AiMessageDto> messages, String aiMessage) {
         // AI 서버는 세션을 기억 못 하므로 AI응답을 이력에 저장
         List<AiMessageDto> updatedMessages = new ArrayList<>(messages);
         updatedMessages.add(new AiMessageDto(AI_ROLE, aiMessage));
@@ -72,6 +95,7 @@ public class AiSessionService {
         AiSession aiSession =
                 AiSession.builder()
                         .sessionId(sessionId)
+                        .userId(userId)
                         .status(AiSessionStatus.NEW)
                         .messages(serialize(updatedMessages))
                         .turnCount(INITIAL_TURN_COUNT)
@@ -83,12 +107,16 @@ public class AiSessionService {
     }
 
     private AiSessionResponseDto saveGeneratedSession(
-            String sessionId, List<AiMessageDto> messages, List<AiGenerateTaskDto> tasks) {
+            String sessionId,
+            Long userId,
+            List<AiMessageDto> messages,
+            List<AiGenerateTaskDto> tasks) {
         List<AiGeneratedTaskDto> generatedTasks = tasks.stream().map(this::assignTempId).toList();
 
         AiSession aiSession =
                 AiSession.builder()
                         .sessionId(sessionId)
+                        .userId(userId)
                         .status(AiSessionStatus.GENERATED)
                         .messages(serialize(messages))
                         .turnCount(INITIAL_TURN_COUNT)
@@ -100,11 +128,14 @@ public class AiSessionService {
                 sessionId, AiSessionStatus.GENERATED.name(), null, INITIAL_TURN_COUNT, generatedTasks);
     }
 
-    public AiSessionDetailResponseDto getSession(String sessionId) {
+    public AiSessionDetailResponseDto getSession(String authorizationHeader, String sessionId) {
+        Long userId = extractUserId(authorizationHeader);
+
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
                         .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+        validateOwner(aiSession, userId);
 
         // status별로 응답 구조가 달라서 분리
         return switch (aiSession.getStatus()) {
@@ -138,13 +169,16 @@ public class AiSessionService {
                 aiSession.getSessionId(), aiSession.getStatus().name(), confirmedTasks);
     }
 
-    public AiSessionMessageResponseDto sendMessage(String sessionId, String message) {
+    public AiSessionMessageResponseDto sendMessage(
+            String authorizationHeader, String sessionId, String message) {
+        Long userId = extractUserId(authorizationHeader);
         validateMessage(message);
 
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
                         .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+        validateOwner(aiSession, userId);
 
         // 확정된 세션은 더 이상 대화를 이어갈 수 없음
         if (aiSession.getStatus() == AiSessionStatus.ALREADY_CONFIRMED) {
@@ -185,6 +219,7 @@ public class AiSessionService {
         AiSession updatedSession =
                 AiSession.builder()
                         .sessionId(aiSession.getSessionId())
+                        .userId(aiSession.getUserId())
                         .status(AiSessionStatus.NEW)
                         .messages(serialize(updatedMessages))
                         .turnCount(turnCount)
@@ -207,6 +242,7 @@ public class AiSessionService {
         AiSession updatedSession =
                 AiSession.builder()
                         .sessionId(aiSession.getSessionId())
+                        .userId(aiSession.getUserId())
                         .status(AiSessionStatus.GENERATED)
                         .messages(serialize(messages))
                         .turnCount(turnCount)
@@ -220,11 +256,17 @@ public class AiSessionService {
     }
 
     public AiGeneratedTaskDto updateTask(
-            String sessionId, String tempId, AiSessionTaskUpdateRequestDto request) {
+            String authorizationHeader,
+            String sessionId,
+            String tempId,
+            AiSessionTaskUpdateRequestDto request) {
+        Long userId = extractUserId(authorizationHeader);
+
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
                         .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+        validateOwner(aiSession, userId);
 
         // 아직 일정이 생성되지 않아 요청한 tempId가 존재할 수 없음
         if (aiSession.getStatus() == AiSessionStatus.NEW) {
@@ -261,6 +303,7 @@ public class AiSessionService {
         AiSession updatedSession =
                 AiSession.builder()
                         .sessionId(aiSession.getSessionId())
+                        .userId(aiSession.getUserId())
                         .status(AiSessionStatus.GENERATED)
                         .messages(aiSession.getMessages())
                         .turnCount(aiSession.getTurnCount())
@@ -273,11 +316,14 @@ public class AiSessionService {
         return updatedTask;
     }
 
-    public void deleteTask(String sessionId, String tempId) {
+    public void deleteTask(String authorizationHeader, String sessionId, String tempId) {
+        Long userId = extractUserId(authorizationHeader);
+
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
                         .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+        validateOwner(aiSession, userId);
 
         // 아직 일정이 생성되지 않아 요청한 tempId가 존재할 수 없음
         if (aiSession.getStatus() == AiSessionStatus.NEW) {
@@ -305,6 +351,7 @@ public class AiSessionService {
         AiSession updatedSession =
                 AiSession.builder()
                         .sessionId(aiSession.getSessionId())
+                        .userId(aiSession.getUserId())
                         .status(AiSessionStatus.GENERATED)
                         .messages(aiSession.getMessages())
                         .turnCount(aiSession.getTurnCount())
@@ -402,6 +449,29 @@ public class AiSessionService {
             aiSessionRepository.save(aiSession);
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new CustomException(ErrorCode.AI_SESSION_CONCURRENT_UPDATE);
+        }
+    }
+
+    private Long extractUserId(String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        try {
+            jwtProvider.validate(token);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
+        }
+        return jwtProvider.getUserId(token);
+    }
+
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
+        }
+        return authorizationHeader.substring(7);
+    }
+
+    private void validateOwner(AiSession aiSession, Long userId) {
+        if (!aiSession.getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.AI_SESSION_ACCESS_FORBIDDEN);
         }
     }
 }
