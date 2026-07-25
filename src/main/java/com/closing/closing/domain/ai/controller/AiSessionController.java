@@ -1,6 +1,8 @@
 package com.closing.closing.domain.ai.controller;
 
 import com.closing.closing.domain.ai.dto.AiSessionDetailResponseDto;
+import com.closing.closing.domain.ai.dto.AiSessionMessageRequestDto;
+import com.closing.closing.domain.ai.dto.AiSessionMessageResponseDto;
 import com.closing.closing.domain.ai.dto.AiSessionRequestDto;
 import com.closing.closing.domain.ai.dto.AiSessionResponseDto;
 import com.closing.closing.domain.ai.service.AiSessionService;
@@ -30,5 +32,12 @@ public class AiSessionController {
     @GetMapping("/{sessionId}")
     public ApiResponse<AiSessionDetailResponseDto> getSession(@PathVariable String sessionId) {
         return ApiResponse.onSuccess(aiSessionService.getSession(sessionId));
+    }
+
+    //메시지 전송
+    @PostMapping("/{sessionId}/messages")
+    public ApiResponse<AiSessionMessageResponseDto> sendMessage(
+            @PathVariable String sessionId, @RequestBody AiSessionMessageRequestDto request) {
+        return ApiResponse.onSuccess(aiSessionService.sendMessage(sessionId, request.message()));
     }
 }

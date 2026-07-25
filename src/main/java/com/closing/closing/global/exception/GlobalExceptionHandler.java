@@ -17,6 +17,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException e) {
+        String message = e.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getDefaultMessage())
+                .findFirst()
+                .orElse(ErrorCode.BAD_REQUEST.getMessage());
+        return ResponseEntity
+                .status(ErrorCode.BAD_REQUEST.getHttpStatus())
+                .body(ApiResponse.onFailure(ErrorCode.BAD_REQUEST.getCode(), message, null));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleException(Exception e) {
         return ResponseEntity
@@ -24,26 +35,5 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.onFailure(
                         ErrorCode.INTERNAL_SERVER_ERROR.getCode(),
                         e.getMessage(), null));
-    }
-
-    // 검증 예외 처리
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Void>> handleValidationException(
-            MethodArgumentNotValidException exception
-    ) {
-        String message = exception.getBindingResult()
-                .getFieldErrors()
-                .stream()
-                .findFirst()
-                .map(fieldError -> fieldError.getDefaultMessage())
-                .orElse(ErrorCode.BAD_REQUEST.getMessage());
-
-        return ResponseEntity
-                .status(ErrorCode.BAD_REQUEST.getHttpStatus())
-                .body(ApiResponse.onFailure(
-                        ErrorCode.BAD_REQUEST.getCode(),
-                        message,
-                        null
-                ));
     }
 }

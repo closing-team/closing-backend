@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -42,6 +43,11 @@ public class AiSession extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String confirmedTaskIds;
 
+    // 동시 요청으로 인한 덮어쓰기 방지 (낙관적 잠금) - 새 세션 생성 시엔 null로 두고, 기존 세션
+    // 갱신 시엔 조회했던 값을 그대로 넘겨야 Hibernate가 충돌을 감지할 수 있음
+    @Version
+    private Long version;
+
     @Builder
     public AiSession(
             String sessionId,
@@ -49,12 +55,14 @@ public class AiSession extends BaseEntity {
             String messages,
             int turnCount,
             String generatedTasks,
-            String confirmedTaskIds) {
+            String confirmedTaskIds,
+            Long version) {
         this.sessionId = sessionId;
         this.status = status;
         this.messages = messages;
         this.turnCount = turnCount;
         this.generatedTasks = generatedTasks;
         this.confirmedTaskIds = confirmedTaskIds;
+        this.version = version;
     }
 }
