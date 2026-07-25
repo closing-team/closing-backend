@@ -1,13 +1,12 @@
-package com.closing.closing.domain.ai.dto;
+package com.closing.closing.domain.ai.dto.request;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public record AiConfirmedTaskDto(
-        Long taskId,
+public record AiSessionTaskUpdateRequestDto(
         String title,
         LocalDate startDate,
         LocalTime startTime,
         LocalDate endDate,
         LocalTime endTime,
-        String description) {}
+        String memo) {}
