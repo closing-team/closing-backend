@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.math.BigDecimal;
+
 @Schema(description = "상품 직거래 위치 정보")
 @Getter
 @RequiredArgsConstructor
@@ -13,6 +15,22 @@ public class TradeLocationResponse {
     private final String district;
 
     @Schema(
+            description = "직거래 장소의 위도",
+            example = "37.5665",
+            minimum = "-90",
+            maximum = "90"
+    )
+    private final BigDecimal latitude;
+
+    @Schema(
+            description = "직거래 장소의 경도",
+            example = "126.9780",
+            minimum = "-180",
+            maximum = "180"
+    )
+    private final BigDecimal longitude;
+
+    @Schema(
             description = "사용자 현재 위치와 직거래 장소 사이의 거리(km). 현재 위치를 전달하지 않은 경우 null입니다.",
             example = "1.25"
     )
@@ -20,10 +38,14 @@ public class TradeLocationResponse {
 
     public static TradeLocationResponse of(
             String district,
+            BigDecimal latitude,
+            BigDecimal longitude,
             Double distanceKm
     ) {
         return new TradeLocationResponse(
                 district,
+                latitude,
+                longitude,
                 distanceKm
         );
     }

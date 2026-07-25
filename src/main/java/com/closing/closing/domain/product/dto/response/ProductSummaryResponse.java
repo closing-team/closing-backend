@@ -69,6 +69,8 @@ public class ProductSummaryResponse {
                 product.isDirectAvailable()
                 ? TradeLocationResponse.of(
                         product.getTradeLocation(),
+                        product.getLatitude(),
+                        product.getLongitude(),
                         distanceKm
                 )
                 : null;

@@ -73,7 +73,11 @@ public class ProductResponse {
             Double distanceKm
     ) {
         TradeLocationResponse tradeLocation = product.isDirectAvailable()
-                ? TradeLocationResponse.of(product.getTradeLocation(), distanceKm)
+                ? TradeLocationResponse.of(
+                        product.getTradeLocation(),
+                        product.getLatitude(),
+                        product.getLongitude(),
+                        distanceKm)
                 : null;
 
         return new ProductResponse(
