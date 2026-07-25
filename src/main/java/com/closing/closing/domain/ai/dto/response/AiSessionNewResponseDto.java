@@ -1,5 +1,6 @@
-package com.closing.closing.domain.ai.dto;
+package com.closing.closing.domain.ai.dto.response;
 
+import com.closing.closing.domain.ai.dto.AiMessageDto;
 import java.util.List;
 
 public record AiSessionNewResponseDto(

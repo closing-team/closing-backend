@@ -1,12 +1,12 @@
 package com.closing.closing.domain.ai.controller;
 
-import com.closing.closing.domain.ai.dto.AiGeneratedTaskDto;
-import com.closing.closing.domain.ai.dto.AiSessionDetailResponseDto;
-import com.closing.closing.domain.ai.dto.AiSessionMessageRequestDto;
-import com.closing.closing.domain.ai.dto.AiSessionMessageResponseDto;
-import com.closing.closing.domain.ai.dto.AiSessionRequestDto;
-import com.closing.closing.domain.ai.dto.AiSessionResponseDto;
-import com.closing.closing.domain.ai.dto.AiSessionTaskUpdateRequestDto;
+import com.closing.closing.domain.ai.dto.request.AiSessionMessageRequestDto;
+import com.closing.closing.domain.ai.dto.request.AiSessionRequestDto;
+import com.closing.closing.domain.ai.dto.request.AiSessionTaskUpdateRequestDto;
+import com.closing.closing.domain.ai.dto.response.AiGeneratedTaskDto;
+import com.closing.closing.domain.ai.dto.response.AiSessionDetailResponseDto;
+import com.closing.closing.domain.ai.dto.response.AiSessionMessageResponseDto;
+import com.closing.closing.domain.ai.dto.response.AiSessionResponseDto;
 import com.closing.closing.domain.ai.service.AiSessionService;
 import com.closing.closing.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
