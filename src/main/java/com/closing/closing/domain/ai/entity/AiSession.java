@@ -23,6 +23,9 @@ public class AiSession extends BaseEntity {
     @Column(name = "session_id")
     private String sessionId;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AiSessionStatus status;
@@ -51,6 +54,7 @@ public class AiSession extends BaseEntity {
     @Builder
     public AiSession(
             String sessionId,
+            Long userId,
             AiSessionStatus status,
             String messages,
             int turnCount,
@@ -58,6 +62,7 @@ public class AiSession extends BaseEntity {
             String confirmedTaskIds,
             Long version) {
         this.sessionId = sessionId;
+        this.userId = userId;
         this.status = status;
         this.messages = messages;
         this.turnCount = turnCount;
