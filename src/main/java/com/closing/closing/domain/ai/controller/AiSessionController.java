@@ -10,13 +10,7 @@ import com.closing.closing.domain.ai.dto.AiSessionTaskUpdateRequestDto;
 import com.closing.closing.domain.ai.service.AiSessionService;
 import com.closing.closing.global.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/ai/sessions")
@@ -51,5 +45,14 @@ public class AiSessionController {
             @PathVariable String tempId,
             @RequestBody AiSessionTaskUpdateRequestDto request) {
         return ApiResponse.onSuccess(aiSessionService.updateTask(sessionId, tempId, request));
+    }
+
+    //임시 일정 삭제
+    @DeleteMapping("/{sessionId}/tasks/{tempId}")
+    public ApiResponse<Void> deleteTask(
+            @PathVariable String sessionId,
+            @PathVariable String tempId) {
+        aiSessionService.deleteTask(sessionId, tempId);
+        return ApiResponse.onSuccess(null);
     }
 }
