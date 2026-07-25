@@ -114,10 +114,9 @@ public class ChatRoomController {
             @PathVariable("chatRoomId") Long chatRoomId,
             @Parameter(
                     description = """
-                            텍스트 메시지 정보입니다.
-                            텍스트 전송 시 multipart/form-data의 content 파트에
-                            Content-Type: application/json으로 전달합니다.
-                            이미지를 전송할 때는 생략합니다.
+                            텍스트 메시지 정보 JSON입니다. Content-Type은 application/json입니다.<br><br>
+                            **content**: 전송할 텍스트 / 예시: 아직 판매 중인가요?<br><br>
+                            텍스트 메시지를 보낼 때만 전달하며 이미지를 보낼 때는 생략합니다.
                             """,
                     required = false,
                     schema = @Schema(implementation = MessageRequest.class)
@@ -125,8 +124,9 @@ public class ChatRoomController {
             @RequestPart(value = "content", required = false) MessageRequest request,
             @Parameter(
                     description = """
-                            전송할 이미지 파일 목록입니다.
-                            텍스트를 전송할 때는 생략하며, 각 이미지가 별도의 메시지로 생성됩니다.
+                            전송할 이미지 파일 목록입니다.<br><br>
+                            예시: chat-image1.jpg, chat-image2.jpg<br><br>
+                            텍스트를 전송할 때는 생략합니다. 각 이미지가 별도의 메시지로 생성됩니다.
                             """,
                     required = false,
                     array = @ArraySchema(

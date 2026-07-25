@@ -111,7 +111,7 @@ public class ProductController {
     // 상품 등록
     @Operation(
             summary = "상품 등록",
-            description = "상품 등록에 필요한 정보를 바탕으로 상품을 등록합니다."
+            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -124,16 +124,28 @@ public class ProductController {
     public ApiResponse<ProductCreateResponse> createProduct(
             @Parameter(
                     description = """
-                        상품 등록 정보입니다.
-                        multipart/form-data의 request 파트에
-                        Content-Type: application/json으로 전달합니다.
-                        """,
+                            상품 등록 정보 JSON입니다. Content-Type은 application/json입니다.<br><br>
+                            **title** (필수): 상품 제목 / 예시: 업소용 냉장고<br>
+                            **businessCategory** (필수): 업종 카테고리 / 예시: KOREAN_MEAL<br>
+                            **productCategory** (필수): 품목 카테고리 / 예시: REFRIGERATOR_FREEZER<br>
+                            **price** (필수): 상품 가격 / 예시: 350000<br>
+                            **tradeMethods** (필수): 거래 방식 배열 / 예시: [DIRECT, DELIVERY]<br>
+                            **tradeLocation**: 직거래 장소 / 예시: 서울특별시 중구 명동<br>
+                            **latitude**: 직거래 장소 위도 / 예시: 37.5665<br>
+                            **longitude**: 직거래 장소 경도 / 예시: 126.9780<br>
+                            **description** (필수): 상품 상세 설명 / 예시: 정상 작동합니다.<br><br>
+                            DIRECT 거래 시 tradeLocation, latitude, longitude는 필수입니다.
+                            """,
                     required = true,
                     schema = @Schema(implementation = ProductCreateRequest.class)
             )
             @Valid @RequestPart("request") ProductCreateRequest request,
             @Parameter(
-                    description = "상품 이미지 파일 목록입니다. 1장 이상 10장 이하로 전달합니다.",
+                    description = """
+                            등록할 상품 이미지 파일 목록입니다.<br><br>
+                            예시: refrigerator1.jpg, refrigerator2.jpg<br><br>
+                            이미지는 1장 이상 10장 이하로 전달해야 합니다.
+                            """,
                     required = true,
                     array = @ArraySchema(
                             schema = @Schema(
@@ -324,7 +336,7 @@ public class ProductController {
     // 상품 수정
     @Operation(
             summary = "상품 수정",
-            description = "상품 ID에 해당하는 상품 정보와 이미지를 수정합니다."
+            description = "상품 정보를 request JSON 파트로, 새 이미지를 newImages 파일 파트로 전달합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -344,19 +356,30 @@ public class ProductController {
             @PathVariable Long productId,
             @Parameter(
                     description = """
-                        상품 수정 정보입니다.
-                        multipart/form-data의 request 파트에
-                        Content-Type: application/json으로 전달합니다.
-                        """,
+                            상품 수정 정보 JSON입니다. Content-Type은 application/json입니다.<br><br>
+                            **title** (필수): 수정 후 상품 제목 / 예시: 업소용 냉장고<br>
+                            **businessCategory** (필수): 업종 카테고리 / 예시: KOREAN_MEAL<br>
+                            **productCategory** (필수): 품목 카테고리 / 예시: REFRIGERATOR_FREEZER<br>
+                            **price** (필수): 수정 후 가격 / 예시: 300000<br>
+                            **tradeMethods** (필수): 거래 방식 배열 / 예시: [DIRECT, DELIVERY]<br>
+                            **tradeLocation**: 직거래 장소 / 예시: 서울특별시 중구 명동<br>
+                            **latitude**: 직거래 장소 위도 / 예시: 37.5665<br>
+                            **longitude**: 직거래 장소 경도 / 예시: 126.9780<br>
+                            **description** (필수): 상품 상세 설명 / 예시: 정상 작동합니다.<br>
+                            **retainedImages** (필수): 유지할 기존 이미지 URL 배열 / 예시: [https://example.com/image1.jpg]<br><br>
+                            DIRECT 거래 시 tradeLocation, latitude, longitude는 필수입니다.
+                            """,
                     required = true,
                     schema = @Schema(implementation = ProductUpdateRequest.class)
             )
             @Valid @RequestPart("request") ProductUpdateRequest request,
             @Parameter(
                     description = """
-                        새로 추가할 이미지 파일 목록입니다.
-                        새 이미지가 없으면 이 파트를 생략할 수 있습니다.
-                        """,
+                            새로 추가할 이미지 파일 목록입니다.<br><br>
+                            예시: refrigerator1.jpg, refrigerator2.jpg<br><br>
+                            새 이미지가 없으면 생략합니다.<br>
+                            retainedImages와 합친 최종 이미지 개수는 1장 이상 10장 이하여야 합니다.
+                            """,
                     required = false,
                     array = @ArraySchema(
                             schema = @Schema(
