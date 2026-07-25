@@ -4,9 +4,9 @@ import com.closing.closing.domain.task.dto.TaskReqDTO;
 import com.closing.closing.domain.task.dto.TaskResDTO;
 import com.closing.closing.domain.task.entity.Task;
 import com.closing.closing.domain.task.entity.TaskSource;
-import com.closing.closing.domain.task.exception.TaskException;
-import com.closing.closing.domain.task.exception.code.TaskErrorCode;
 import com.closing.closing.domain.task.repository.TaskRepository;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +25,7 @@ public class TaskService {
     @Transactional
     public TaskResDTO.CreateTaskResultDTO createTask(TaskReqDTO.CreateTaskDTO request) {
         if (request.title() == null || request.title().isBlank()) {
-            throw new TaskException(TaskErrorCode.TASK_TITLE_BLANK);
+            throw new CustomException(ErrorCode.TASK_TITLE_BLANK);
         }
 
         // TODO: 인증 추가 후 토큰에서 registration 정보 추출 필요
@@ -50,7 +50,7 @@ public class TaskService {
         // TODO: 인증 추가 후 본인의 일정인지 확인 필요
 
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         task.update(
                 request.title(),
@@ -69,7 +69,7 @@ public class TaskService {
         // TODO: 인증 추가 후 본인의 일정인지 확인 필요
 
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         taskRepository.delete(task);
     }
@@ -78,7 +78,7 @@ public class TaskService {
         // TODO: 인증 추가 후 본인의 일정인지 확인 필요
 
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         return TaskResDTO.TaskDetailDTO.from(task);
     }
@@ -88,7 +88,7 @@ public class TaskService {
         // TODO: 인증 추가 후 본인의 일정인지 확인 필요
 
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new TaskException(TaskErrorCode.TASK_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         task.complete(request.isCompleted());
 

@@ -4,9 +4,9 @@ import com.closing.closing.domain.task.dto.TaskReqDTO;
 import com.closing.closing.domain.task.dto.TaskResDTO;
 import com.closing.closing.domain.task.entity.Task;
 import com.closing.closing.domain.task.entity.TaskSource;
-import com.closing.closing.domain.task.exception.TaskException;
-import com.closing.closing.domain.task.exception.code.TaskErrorCode;
 import com.closing.closing.domain.task.repository.TaskRepository;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -89,10 +89,10 @@ class TaskServiceTest {
         );
 
         // when & then
-        TaskException exception = assertThrows(TaskException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> taskService.createTask(request));
 
-        assertEquals(TaskErrorCode.TASK_TITLE_BLANK, exception.getTaskErrorCode());
+        assertEquals(ErrorCode.TASK_TITLE_BLANK, exception.getErrorCode());
     }
 
     @Test
@@ -109,10 +109,10 @@ class TaskServiceTest {
         );
 
         // when & then
-        TaskException exception = assertThrows(TaskException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> taskService.createTask(request));
 
-        assertEquals(TaskErrorCode.TASK_TITLE_BLANK, exception.getTaskErrorCode());
+        assertEquals(ErrorCode.TASK_TITLE_BLANK, exception.getErrorCode());
     }
 
     @Test
@@ -167,10 +167,10 @@ class TaskServiceTest {
         when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
         // when & then
-        TaskException exception = assertThrows(TaskException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> taskService.updateTask(taskId, request));
 
-        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+        assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -205,10 +205,10 @@ class TaskServiceTest {
         when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
         // when & then
-        TaskException exception = assertThrows(TaskException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> taskService.deleteTask(taskId));
 
-        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+        assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -256,10 +256,10 @@ class TaskServiceTest {
         when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
         // when & then
-        TaskException exception = assertThrows(TaskException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> taskService.getTask(taskId));
 
-        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+        assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
@@ -323,10 +323,10 @@ class TaskServiceTest {
         when(taskRepository.findById(taskId)).thenReturn(Optional.empty());
 
         // when & then
-        TaskException exception = assertThrows(TaskException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> taskService.completeTask(taskId, request));
 
-        assertEquals(TaskErrorCode.TASK_NOT_FOUND, exception.getTaskErrorCode());
+        assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
 
     @Test
