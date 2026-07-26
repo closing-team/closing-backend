@@ -1,5 +1,6 @@
 package com.closing.closing.domain.support.service;
 
+import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
@@ -10,7 +11,6 @@ import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.closing.closing.global.entity.BaseCreatedEntity;
-import com.closing.closing.global.jwt.JwtProvider;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,19 +36,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BookmarkServiceTest {
 
     private static final Long USER_ID = 1L;
-    private static final String TOKEN = "access-token";
-    private static final String AUTHORIZATION_HEADER = "Bearer " + TOKEN;
+    private static final String AUTHORIZATION_HEADER = "Bearer access-token";
 
     @Mock
     private BookmarkRepository bookmarkRepository;
@@ -60,67 +57,15 @@ class BookmarkServiceTest {
     private EntityManager entityManager;
 
     @Mock
-    private JwtProvider jwtProvider;
+    private SupportAuthentication supportAuthentication;
 
     @InjectMocks
     private BookmarkService bookmarkService;
 
     @BeforeEach
     void setUpAuthentication() {
-        lenient().when(jwtProvider.isSignupToken(TOKEN)).thenReturn(false);
-        lenient().when(jwtProvider.getUserId(TOKEN)).thenReturn(USER_ID);
-    }
-
-    @Test
-    @DisplayName("Authorization 헤더가 없으면 Bookmark API 인증에 실패한다")
-    void authentication_Fail_WhenAuthorizationHeaderMissing() {
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> bookmarkService.getBookmarks(null, "LATEST", null, "20"));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(bookmarkRepository, supportRepository, entityManager);
-    }
-
-    @Test
-    @DisplayName("Bearer 형식이 아니면 Bookmark API 인증에 실패한다")
-    void authentication_Fail_WhenAuthorizationHeaderMalformed() {
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> bookmarkService.getBookmarks(TOKEN, "LATEST", null, "20"));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(bookmarkRepository, supportRepository, entityManager);
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 토큰이면 Bookmark API 인증에 실패한다")
-    void authentication_Fail_WhenTokenInvalid() {
-        doThrow(new IllegalArgumentException("유효하지 않은 토큰입니다."))
-                .when(jwtProvider)
-                .validate("invalid-token");
-
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> bookmarkService.getBookmarks(
-                        "Bearer invalid-token", "LATEST", null, "20"));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(bookmarkRepository, supportRepository, entityManager);
-    }
-
-    @Test
-    @DisplayName("가입 토큰으로 Bookmark API에 접근할 수 없다")
-    void authentication_Fail_WhenSignupToken() {
-        when(jwtProvider.isSignupToken(TOKEN)).thenReturn(true);
-
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> bookmarkService.getBookmarks(
-                        AUTHORIZATION_HEADER, "LATEST", null, "20"));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(bookmarkRepository, supportRepository, entityManager);
+        lenient().when(supportAuthentication.resolveUserId(AUTHORIZATION_HEADER))
+                .thenReturn(USER_ID);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.closing.closing.domain.support.service;
 
+import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.entity.SupportStatus;
@@ -7,7 +8,6 @@ import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,20 +27,17 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SupportServiceTest {
 
     private static final Long USER_ID = 1L;
-    private static final String TOKEN = "access-token";
-    private static final String AUTHORIZATION_HEADER = "Bearer " + TOKEN;
+    private static final String AUTHORIZATION_HEADER = "Bearer access-token";
 
     @Mock
     private SupportRepository supportRepository;
@@ -49,67 +46,15 @@ class SupportServiceTest {
     private BookmarkRepository bookmarkRepository;
 
     @Mock
-    private JwtProvider jwtProvider;
+    private SupportAuthentication supportAuthentication;
 
     @InjectMocks
     private SupportService supportService;
 
     @BeforeEach
     void setUpAuthentication() {
-        lenient().when(jwtProvider.isSignupToken(TOKEN)).thenReturn(false);
-        lenient().when(jwtProvider.getUserId(TOKEN)).thenReturn(USER_ID);
-    }
-
-    @Test
-    @DisplayName("Authorization 헤더가 없으면 Support API 인증에 실패한다")
-    void authentication_Fail_WhenAuthorizationHeaderMissing() {
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> supportService.getSupports("POPULAR", null, "20", null));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(supportRepository, bookmarkRepository);
-    }
-
-    @Test
-    @DisplayName("Bearer 형식이 아니면 Support API 인증에 실패한다")
-    void authentication_Fail_WhenAuthorizationHeaderMalformed() {
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> supportService.getSupports("POPULAR", null, "20", TOKEN));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(supportRepository, bookmarkRepository);
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 토큰이면 Support API 인증에 실패한다")
-    void authentication_Fail_WhenTokenInvalid() {
-        doThrow(new IllegalArgumentException("유효하지 않은 토큰입니다."))
-                .when(jwtProvider)
-                .validate("invalid-token");
-
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> supportService.getSupports(
-                        "POPULAR", null, "20", "Bearer invalid-token"));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(supportRepository, bookmarkRepository);
-    }
-
-    @Test
-    @DisplayName("가입 토큰으로 Support API에 접근할 수 없다")
-    void authentication_Fail_WhenSignupToken() {
-        when(jwtProvider.isSignupToken(TOKEN)).thenReturn(true);
-
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> supportService.getSupports(
-                        "POPULAR", null, "20", AUTHORIZATION_HEADER));
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(supportRepository, bookmarkRepository);
+        lenient().when(supportAuthentication.resolveUserId(AUTHORIZATION_HEADER))
+                .thenReturn(USER_ID);
     }
 
     @Test

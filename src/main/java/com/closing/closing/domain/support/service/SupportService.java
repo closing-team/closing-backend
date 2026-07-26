@@ -1,13 +1,12 @@
 package com.closing.closing.domain.support.service;
 
+import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,19 +24,18 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class SupportService {
 
-    private static final String BEARER_PREFIX = "Bearer ";
     private static final int MAX_PAGE_SIZE = 100;
     private static final LocalDate LAST_END_DATE = LocalDate.of(9999, 12, 31);
 
     private final SupportRepository supportRepository;
     private final BookmarkRepository bookmarkRepository;
-    private final JwtProvider jwtProvider;
+    private final SupportAuthentication supportAuthentication;
 
     @Transactional
     public SupportResDTO.SupportDetailDTO getSupport(
             Long supportId,
             String authorizationHeader) {
-        Long userId = extractUserId(authorizationHeader);
+        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
 
         int updatedCount = supportRepository.increaseViewCount(supportId);
         if (updatedCount == 0) {
@@ -58,7 +56,7 @@ public class SupportService {
             String cursorValue,
             String sizeValue,
             String authorizationHeader) {
-        Long userId = extractUserId(authorizationHeader);
+        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
 
         SupportSort sort = SupportSort.from(sortValue);
         int size = parseSize(sizeValue);
@@ -175,32 +173,6 @@ public class SupportService {
                     : supportInfo.getApplyEndDate()).toString();
         };
         return sortCursor + "_" + supportInfo.getId();
-    }
-
-    private Long extractUserId(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        String token = authorizationHeader.substring(BEARER_PREFIX.length());
-        if (token.isBlank()) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        try {
-            jwtProvider.validate(token);
-            if (jwtProvider.isSignupToken(token)) {
-                throw new CustomException(ErrorCode.UNAUTHORIZED);
-            }
-
-            Long userId = jwtProvider.getUserId(token);
-            if (userId == null) {
-                throw new CustomException(ErrorCode.UNAUTHORIZED);
-            }
-            return userId;
-        } catch (IllegalArgumentException | JwtException exception) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
     }
 
     private enum SupportSort {
