@@ -49,6 +49,21 @@ public enum ErrorCode {
     TASK_TITLE_BLANK(HttpStatus.BAD_REQUEST, "TASK400", "일정 제목이 비어있습니다."),
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK404", "일정을 찾을 수 없습니다."),
 
+    // 지원정보 에러코드
+    SUPPORT_INVALID_QUERY(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
+    BOOKMARK_INVALID_QUERY(HttpStatus.BAD_REQUEST, "COMMON400", "잘못된 요청입니다."),
+    SUPPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "SUPPORT404", "존재하지 않는 지원정보입니다."),
+    BOOKMARK_ALREADY_EXISTS(HttpStatus.CONFLICT, "BOOKMARK409", "이미 등록된 북마크입니다."),
+    BOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "BOOKMARK404", "북마크를 찾을 수 없습니다."),
+    SUPPORT_API_KEY_NOT_FOUND(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "SUPPORT500",
+            "기업마당 API 키가 설정되지 않았습니다."),
+    SUPPORT_EXTERNAL_API_ERROR(
+            HttpStatus.BAD_GATEWAY,
+            "SUPPORT502",
+            "기업마당 API 호출에 실패했습니다."),
+
     // AI세션 에러코드
     AI_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AI401", "인증 토큰이 없거나 만료되었습니다."),
     AI_EMPTY_INITIAL_INPUT(HttpStatus.BAD_REQUEST, "AI_INITIAL_INPUT400", "초기 상황 입력 내용이 없습니다."),

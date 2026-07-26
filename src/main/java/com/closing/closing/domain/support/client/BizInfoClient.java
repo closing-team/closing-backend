@@ -1,8 +1,8 @@
 package com.closing.closing.domain.support.client;
 
 import com.closing.closing.domain.support.dto.BizInfoResDTO;
-import com.closing.closing.domain.support.exception.SupportException;
-import com.closing.closing.domain.support.exception.code.SupportErrorCode;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -35,7 +35,7 @@ public class BizInfoClient {
             int pageSize,
             int pageIndex) {
         if (apiKey == null || apiKey.isBlank()) {
-            throw new SupportException(SupportErrorCode.SUPPORT_API_KEY_NOT_FOUND);
+            throw new CustomException(ErrorCode.SUPPORT_API_KEY_NOT_FOUND);
         }
 
         try {
@@ -51,13 +51,13 @@ public class BizInfoClient {
                     .body(BizInfoResDTO.BizInfoResponseDTO.class);
 
             if (response == null || response.jsonArray() == null) {
-                throw new SupportException(SupportErrorCode.SUPPORT_EXTERNAL_API_ERROR);
+                throw new CustomException(ErrorCode.SUPPORT_EXTERNAL_API_ERROR);
             }
             return response;
-        } catch (SupportException exception) {
+        } catch (CustomException exception) {
             throw exception;
         } catch (RestClientException exception) {
-            throw new SupportException(SupportErrorCode.SUPPORT_EXTERNAL_API_ERROR);
+            throw new CustomException(ErrorCode.SUPPORT_EXTERNAL_API_ERROR);
         }
     }
 }

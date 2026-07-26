@@ -2,9 +2,9 @@ package com.closing.closing.domain.support.service;
 
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
-import com.closing.closing.domain.support.exception.SupportException;
-import com.closing.closing.domain.support.exception.code.SupportErrorCode;
 import com.closing.closing.domain.support.repository.SupportRepository;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,12 +32,12 @@ public class SupportService {
             String authorizationHeader) {
         int updatedCount = supportRepository.increaseViewCount(supportId);
         if (updatedCount == 0) {
-            throw new SupportException(SupportErrorCode.SUPPORT_NOT_FOUND);
+            throw new CustomException(ErrorCode.SUPPORT_NOT_FOUND);
         }
 
         SupportInfo supportInfo = supportRepository.findById(supportId)
-                .orElseThrow(() -> new SupportException(
-                        SupportErrorCode.SUPPORT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.SUPPORT_NOT_FOUND));
 
         // TODO: 인증 추가 후 토큰의 사용자 ID로 북마크 여부 조회 필요
         return SupportResDTO.SupportDetailDTO.from(supportInfo, false);
@@ -93,11 +93,11 @@ public class SupportService {
         try {
             int size = Integer.parseInt(value);
             if (size < 1 || size > MAX_PAGE_SIZE) {
-                throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+                throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
             }
             return size;
         } catch (NumberFormatException exception) {
-            throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+            throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
         }
     }
 
@@ -108,7 +108,7 @@ public class SupportService {
 
         int separatorIndex = value.lastIndexOf('_');
         if (separatorIndex <= 0 || separatorIndex == value.length() - 1) {
-            throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+            throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
         }
 
         String sortCursor = value.substring(0, separatorIndex);
@@ -117,14 +117,14 @@ public class SupportService {
         try {
             long supportId = Long.parseLong(idCursor);
             if (supportId <= 0) {
-                throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+                throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
             }
 
             return switch (sort) {
                 case POPULAR -> {
                     int viewCount = Integer.parseInt(sortCursor);
                     if (viewCount < 0) {
-                        throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+                        throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
                     }
                     yield SupportCursor.popular(viewCount, supportId);
                 }
@@ -134,7 +134,7 @@ public class SupportService {
                         LocalDate.parse(sortCursor), supportId);
             };
         } catch (NumberFormatException | DateTimeParseException exception) {
-            throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+            throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
         }
     }
 
@@ -158,7 +158,7 @@ public class SupportService {
             try {
                 return SupportSort.valueOf(value);
             } catch (IllegalArgumentException | NullPointerException exception) {
-                throw new SupportException(SupportErrorCode.SUPPORT_INVALID_QUERY);
+                throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
             }
         }
     }
