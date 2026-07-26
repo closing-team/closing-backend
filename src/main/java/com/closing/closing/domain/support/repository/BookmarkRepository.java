@@ -17,6 +17,16 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
     Optional<Bookmark> findByUser_IdAndSupportInfo_Id(Long userId, Long supportId);
 
     @Query("""
+            SELECT b.supportInfo.id
+            FROM Bookmark b
+            WHERE b.user.id = :userId
+              AND b.supportInfo.id IN :supportIds
+            """)
+    List<Long> findBookmarkedSupportIds(
+            @Param("userId") Long userId,
+            @Param("supportIds") List<Long> supportIds);
+
+    @Query("""
             SELECT b FROM Bookmark b
             JOIN FETCH b.supportInfo s
             WHERE b.user.id = :userId

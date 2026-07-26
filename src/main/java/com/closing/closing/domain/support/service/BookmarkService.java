@@ -1,5 +1,6 @@
 package com.closing.closing.domain.support.service;
 
+import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
@@ -33,9 +34,14 @@ public class BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final SupportRepository supportRepository;
     private final EntityManager entityManager;
+    private final SupportAuthentication supportAuthentication;
 
     @Transactional
-    public BookmarkResDTO.BookmarkCreateDTO createBookmark(Long userId, Long supportId) {
+    public BookmarkResDTO.BookmarkCreateDTO createBookmark(
+            String authorizationHeader,
+            Long supportId) {
+        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
+
         if (supportId == null || supportId <= 0) {
             throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
         }
@@ -67,7 +73,9 @@ public class BookmarkService {
     }
 
     @Transactional
-    public void deleteBookmark(Long userId, Long supportId) {
+    public void deleteBookmark(String authorizationHeader, Long supportId) {
+        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
+
         Bookmark bookmark = bookmarkRepository.findByUser_IdAndSupportInfo_Id(userId, supportId)
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.BOOKMARK_NOT_FOUND));
@@ -76,10 +84,12 @@ public class BookmarkService {
     }
 
     public BookmarkResDTO.BookmarkListDTO getBookmarks(
-            Long userId,
+            String authorizationHeader,
             String sortValue,
             String cursorValue,
             String sizeValue) {
+        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
+
         BookmarkSort sort = BookmarkSort.from(sortValue);
         int size = parseSize(sizeValue);
         BookmarkCursor cursor = parseCursor(sort, cursorValue);

@@ -33,11 +33,8 @@ public class BookmarkController {
             String authorizationHeader,
             @RequestBody BookmarkReqDTO.BookmarkCreateDTO request
     ) {
-        // TODO: 인증 연동 후 Authorization 토큰의 사용자 ID를 사용한다.
-        Long userId = 1L;
-
         return ApiResponse.onSuccess(
-                bookmarkService.createBookmark(userId, request.supportId()));
+                bookmarkService.createBookmark(authorizationHeader, request.supportId()));
     }
 
     @Operation(summary = "북마크 삭제", description = "등록한 지원정보 북마크를 삭제합니다.")
@@ -47,10 +44,7 @@ public class BookmarkController {
             String authorizationHeader,
             @PathVariable("supportId") Long supportId
     ) {
-        // TODO: 인증 연동 후 Authorization 토큰의 사용자 ID를 사용한다.
-        Long userId = 1L;
-
-        bookmarkService.deleteBookmark(userId, supportId);
+        bookmarkService.deleteBookmark(authorizationHeader, supportId);
         return ApiResponse.onSuccess(null);
     }
 
@@ -63,10 +57,7 @@ public class BookmarkController {
             @RequestParam(value = "cursor", required = false) String cursor,
             @RequestParam(value = "size", defaultValue = "20") String size
     ) {
-        // TODO: 인증 연동 후 Authorization 토큰의 사용자 ID를 사용한다.
-        Long userId = 1L;
-
         return ApiResponse.onSuccess(
-                bookmarkService.getBookmarks(userId, sort, cursor, size));
+                bookmarkService.getBookmarks(authorizationHeader, sort, cursor, size));
     }
 }

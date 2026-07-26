@@ -1,5 +1,6 @@
 package com.closing.closing.domain.support.service;
 
+import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
@@ -11,6 +12,7 @@ import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.closing.closing.global.entity.BaseCreatedEntity;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,12 +36,16 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BookmarkServiceTest {
+
+    private static final Long USER_ID = 1L;
+    private static final String AUTHORIZATION_HEADER = "Bearer access-token";
 
     @Mock
     private BookmarkRepository bookmarkRepository;
@@ -50,8 +56,17 @@ class BookmarkServiceTest {
     @Mock
     private EntityManager entityManager;
 
+    @Mock
+    private SupportAuthentication supportAuthentication;
+
     @InjectMocks
     private BookmarkService bookmarkService;
+
+    @BeforeEach
+    void setUpAuthentication() {
+        lenient().when(supportAuthentication.resolveUserId(AUTHORIZATION_HEADER))
+                .thenReturn(USER_ID);
+    }
 
     @Test
     @DisplayName("지원정보 북마크 추가 성공")
@@ -82,7 +97,7 @@ class BookmarkServiceTest {
 
         // when
         BookmarkResDTO.BookmarkCreateDTO result =
-                bookmarkService.createBookmark(userId, supportId);
+                bookmarkService.createBookmark(AUTHORIZATION_HEADER, supportId);
 
         // then
         assertEquals(bookmarkId, result.bookmarkId());
@@ -96,7 +111,7 @@ class BookmarkServiceTest {
     void createBookmark_Fail_WhenSupportIdIsNull() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> bookmarkService.createBookmark(1L, null));
+                () -> bookmarkService.createBookmark(AUTHORIZATION_HEADER, null));
 
         assertEquals(
                 ErrorCode.BOOKMARK_INVALID_QUERY,
@@ -109,7 +124,7 @@ class BookmarkServiceTest {
     void createBookmark_Fail_WhenSupportIdIsNotPositive() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> bookmarkService.createBookmark(1L, 0L));
+                () -> bookmarkService.createBookmark(AUTHORIZATION_HEADER, 0L));
 
         assertEquals(
                 ErrorCode.BOOKMARK_INVALID_QUERY,
@@ -127,7 +142,7 @@ class BookmarkServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> bookmarkService.createBookmark(userId, supportId));
+                () -> bookmarkService.createBookmark(AUTHORIZATION_HEADER, supportId));
 
         assertEquals(
                 ErrorCode.SUPPORT_NOT_FOUND,
@@ -149,7 +164,7 @@ class BookmarkServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> bookmarkService.createBookmark(userId, supportId));
+                () -> bookmarkService.createBookmark(AUTHORIZATION_HEADER, supportId));
 
         assertEquals(
                 ErrorCode.BOOKMARK_ALREADY_EXISTS,
@@ -179,7 +194,7 @@ class BookmarkServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> bookmarkService.createBookmark(userId, supportId));
+                () -> bookmarkService.createBookmark(AUTHORIZATION_HEADER, supportId));
 
         assertEquals(
                 ErrorCode.BOOKMARK_ALREADY_EXISTS,
@@ -211,7 +226,7 @@ class BookmarkServiceTest {
         // when & then
         DataIntegrityViolationException exception = assertThrows(
                 DataIntegrityViolationException.class,
-                () -> bookmarkService.createBookmark(userId, supportId));
+                () -> bookmarkService.createBookmark(AUTHORIZATION_HEADER, supportId));
 
         assertEquals(integrityException, exception);
     }
@@ -233,7 +248,7 @@ class BookmarkServiceTest {
                 .thenReturn(Optional.of(bookmark));
 
         // when
-        bookmarkService.deleteBookmark(userId, supportId);
+        bookmarkService.deleteBookmark(AUTHORIZATION_HEADER, supportId);
 
         // then
         verify(bookmarkRepository).delete(bookmark);
@@ -250,7 +265,7 @@ class BookmarkServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> bookmarkService.deleteBookmark(userId, supportId));
+                () -> bookmarkService.deleteBookmark(AUTHORIZATION_HEADER, supportId));
 
         assertEquals(
                 ErrorCode.BOOKMARK_NOT_FOUND,
@@ -278,7 +293,7 @@ class BookmarkServiceTest {
 
         // when
         BookmarkResDTO.BookmarkListDTO result = bookmarkService.getBookmarks(
-                userId, "POPULAR", null, "2");
+                AUTHORIZATION_HEADER, "POPULAR", null, "2");
 
         // then
         assertEquals(2, result.bookmarks().size());
@@ -303,7 +318,7 @@ class BookmarkServiceTest {
 
         // when
         BookmarkResDTO.BookmarkListDTO result = bookmarkService.getBookmarks(
-                userId, "LATEST", null, "20");
+                AUTHORIZATION_HEADER, "LATEST", null, "20");
 
         // then
         assertEquals(1, result.bookmarks().size());
@@ -321,7 +336,8 @@ class BookmarkServiceTest {
                 .thenReturn(List.of());
 
         // when
-        bookmarkService.getBookmarks(userId, "LATEST", "10", "20");
+        bookmarkService.getBookmarks(
+                AUTHORIZATION_HEADER, "LATEST", "10", "20");
 
         // then
         verify(bookmarkRepository).findAllByLatest(
@@ -344,7 +360,7 @@ class BookmarkServiceTest {
 
         // when
         bookmarkService.getBookmarks(
-                userId, "DEADLINE", "2026-12-31_10", "20");
+                AUTHORIZATION_HEADER, "DEADLINE", "2026-12-31_10", "20");
 
         // then
         verify(bookmarkRepository).findAllByDeadline(
@@ -361,7 +377,7 @@ class BookmarkServiceTest {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.getBookmarks(
-                        1L, "OLDEST", null, "20"));
+                        AUTHORIZATION_HEADER, "OLDEST", null, "20"));
 
         assertEquals(
                 ErrorCode.BOOKMARK_INVALID_QUERY,
@@ -374,7 +390,7 @@ class BookmarkServiceTest {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.getBookmarks(
-                        1L, "POPULAR", "invalid", "20"));
+                        AUTHORIZATION_HEADER, "POPULAR", "invalid", "20"));
 
         assertEquals(
                 ErrorCode.BOOKMARK_INVALID_QUERY,
@@ -387,7 +403,7 @@ class BookmarkServiceTest {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.getBookmarks(
-                        1L, "LATEST", null, "101"));
+                        AUTHORIZATION_HEADER, "LATEST", null, "101"));
 
         assertEquals(
                 ErrorCode.BOOKMARK_INVALID_QUERY,

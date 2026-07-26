@@ -1,11 +1,14 @@
 package com.closing.closing.domain.support.service;
 
+import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.entity.SupportStatus;
+import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,19 +27,35 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class SupportServiceTest {
 
+    private static final Long USER_ID = 1L;
+    private static final String AUTHORIZATION_HEADER = "Bearer access-token";
+
     @Mock
     private SupportRepository supportRepository;
 
+    @Mock
+    private BookmarkRepository bookmarkRepository;
+
+    @Mock
+    private SupportAuthentication supportAuthentication;
+
     @InjectMocks
     private SupportService supportService;
+
+    @BeforeEach
+    void setUpAuthentication() {
+        lenient().when(supportAuthentication.resolveUserId(AUTHORIZATION_HEADER))
+                .thenReturn(USER_ID);
+    }
 
     @Test
     @DisplayName("지원정보 상세 조회 성공 및 조회수 증가")
@@ -58,10 +77,12 @@ class SupportServiceTest {
         when(supportRepository.increaseViewCount(supportId)).thenReturn(1);
         when(supportRepository.findById(supportId))
                 .thenReturn(Optional.of(supportInfo));
+        when(bookmarkRepository.existsByUser_IdAndSupportInfo_Id(USER_ID, supportId))
+                .thenReturn(true);
 
         // when
         SupportResDTO.SupportDetailDTO result =
-                supportService.getSupport(supportId, null);
+                supportService.getSupport(supportId, AUTHORIZATION_HEADER);
 
         // then
         assertEquals(supportId, result.supportId());
@@ -69,7 +90,7 @@ class SupportServiceTest {
         assertEquals("예산 소진시까지", result.applicationPeriod());
         assertEquals("https://www.bizinfo.go.kr/support/1", result.externalUrl());
         assertEquals(1521, result.viewCount());
-        assertFalse(result.isBookmarked());
+        assertTrue(result.isBookmarked());
         var orderedRepository = inOrder(supportRepository);
         orderedRepository.verify(supportRepository).increaseViewCount(supportId);
         orderedRepository.verify(supportRepository).findById(supportId);
@@ -84,7 +105,7 @@ class SupportServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> supportService.getSupport(supportId, null));
+                () -> supportService.getSupport(supportId, AUTHORIZATION_HEADER));
 
         assertEquals(
                 ErrorCode.SUPPORT_NOT_FOUND,
@@ -103,16 +124,20 @@ class SupportServiceTest {
         when(supportRepository.findAllByPopular(
                 null, null, PageRequest.of(0, 3)))
                 .thenReturn(List.of(firstSupport, secondSupport, nextSupport));
+        when(bookmarkRepository.findBookmarkedSupportIds(
+                USER_ID, List.of(3L, 2L)))
+                .thenReturn(List.of(3L));
 
         // when
         SupportResDTO.SupportListDTO result = supportService.getSupports(
-                "POPULAR", null, "2", null);
+                "POPULAR", null, "2", AUTHORIZATION_HEADER);
 
         // then
         assertEquals(2, result.supports().size());
         assertEquals(3L, result.supports().get(0).supportId());
         assertEquals("첫 번째 공고", result.supports().get(0).title());
-        assertFalse(result.supports().get(0).isBookmarked());
+        assertTrue(result.supports().get(0).isBookmarked());
+        assertFalse(result.supports().get(1).isBookmarked());
         assertTrue(result.page().hasNext());
         assertEquals("80_2", result.page().nextCursor());
     }
@@ -126,10 +151,13 @@ class SupportServiceTest {
         when(supportRepository.findAllByPopular(
                 null, null, PageRequest.of(0, 21)))
                 .thenReturn(List.of(support));
+        when(bookmarkRepository.findBookmarkedSupportIds(
+                USER_ID, List.of(1L)))
+                .thenReturn(List.of());
 
         // when
         SupportResDTO.SupportListDTO result = supportService.getSupports(
-                "POPULAR", null, "20", null);
+                "POPULAR", null, "20", AUTHORIZATION_HEADER);
 
         // then
         assertEquals(1, result.supports().size());
@@ -146,7 +174,8 @@ class SupportServiceTest {
                 .thenReturn(List.of());
 
         // when
-        supportService.getSupports("POPULAR", "1520_1", "20", null);
+        supportService.getSupports(
+                "POPULAR", "1520_1", "20", AUTHORIZATION_HEADER);
 
         // then
         verify(supportRepository).findAllByPopular(
@@ -158,7 +187,8 @@ class SupportServiceTest {
     void getSupports_Fail_WhenSortIsInvalid() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> supportService.getSupports("OLDEST", null, "20", null));
+                () -> supportService.getSupports(
+                        "OLDEST", null, "20", AUTHORIZATION_HEADER));
 
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
@@ -170,7 +200,8 @@ class SupportServiceTest {
     void getSupports_Fail_WhenCursorIsInvalid() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> supportService.getSupports("POPULAR", "invalid", "20", null));
+                () -> supportService.getSupports(
+                        "POPULAR", "invalid", "20", AUTHORIZATION_HEADER));
 
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
@@ -182,7 +213,8 @@ class SupportServiceTest {
     void getSupports_Fail_WhenSizeIsOutOfRange() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> supportService.getSupports("POPULAR", null, "101", null));
+                () -> supportService.getSupports(
+                        "POPULAR", null, "101", AUTHORIZATION_HEADER));
 
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
