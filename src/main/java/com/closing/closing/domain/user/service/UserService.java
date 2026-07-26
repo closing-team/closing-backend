@@ -1,5 +1,6 @@
 package com.closing.closing.domain.user.service;
 
+import com.closing.closing.domain.user.dto.request.UpdateUserRequest;
 import com.closing.closing.domain.user.dto.response.UserInfoResponse;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
@@ -17,23 +18,29 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
 
-    @Transactional
-    public void withdraw(String authorizationHeader) {
-        Long userId = extractUserId(authorizationHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        user.withdraw();
-    public UserInfoResponse updateMyInfo(String authorizationHeader, UpdateUserRequest request) {
-        Long userId = extractUserId(authorizationHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
-        user.updateInfo(request.getName(), request.getPhone());
     @Transactional(readOnly = true)
     public UserInfoResponse getMyInfo(String authorizationHeader) {
         Long userId = extractUserId(authorizationHeader);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         return UserInfoResponse.from(user);
+    }
+
+    @Transactional
+    public UserInfoResponse updateMyInfo(String authorizationHeader, UpdateUserRequest request) {
+        Long userId = extractUserId(authorizationHeader);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.updateInfo(request.getName(), request.getPhone());
+        return UserInfoResponse.from(user);
+    }
+
+    @Transactional
+    public void withdraw(String authorizationHeader) {
+        Long userId = extractUserId(authorizationHeader);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.withdraw();
     }
 
     private Long extractUserId(String authorizationHeader) {
