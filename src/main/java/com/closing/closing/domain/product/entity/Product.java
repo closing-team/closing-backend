@@ -64,8 +64,10 @@ public class Product extends BaseEntity {
     @Column(nullable = false)
     private ProductStatus status = ProductStatus.SELLING;
 
+    @Column(precision = 10, scale = 7)
     private BigDecimal latitude;
 
+    @Column(precision = 10, scale = 7)
     private BigDecimal longitude;
 
     private LocalDate purchasedAt;
