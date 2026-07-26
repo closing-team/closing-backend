@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -31,6 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/ai/sessions")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class AiSessionController {
 
     private final AiSessionService aiSessionService;
@@ -84,7 +86,9 @@ public class AiSessionController {
     })
     @PostMapping
     public ApiResponse<AiSessionResponseDto> createSession(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @Parameter(hidden = true)
+                    @RequestHeader(value = "Authorization", required = false)
+                    String authorizationHeader,
             @RequestBody AiSessionRequestDto request) {
         return ApiResponse.onSuccess(aiSessionService.createSession(authorizationHeader, request));
     }
@@ -151,7 +155,9 @@ public class AiSessionController {
     })
     @GetMapping("/{sessionId}")
     public ApiResponse<AiSessionDetailResponseDto> getSession(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @Parameter(hidden = true)
+                    @RequestHeader(value = "Authorization", required = false)
+                    String authorizationHeader,
             @Parameter(description = "조회할 세션 ID", required = true) @PathVariable String sessionId) {
         return ApiResponse.onSuccess(aiSessionService.getSession(authorizationHeader, sessionId));
     }
@@ -267,7 +273,9 @@ public class AiSessionController {
     })
     @PostMapping("/{sessionId}/messages")
     public ApiResponse<AiSessionMessageResponseDto> sendMessage(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @Parameter(hidden = true)
+                    @RequestHeader(value = "Authorization", required = false)
+                    String authorizationHeader,
             @Parameter(description = "메시지를 전송할 세션 ID", required = true) @PathVariable
                     String sessionId,
             @RequestBody AiSessionMessageRequestDto request) {
@@ -386,7 +394,9 @@ public class AiSessionController {
     })
     @PatchMapping("/{sessionId}/tasks/{tempId}")
     public ApiResponse<AiGeneratedTaskDto> updateTask(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @Parameter(hidden = true)
+                    @RequestHeader(value = "Authorization", required = false)
+                    String authorizationHeader,
             @Parameter(description = "임시 일정이 속한 세션 ID", required = true) @PathVariable
                     String sessionId,
             @Parameter(description = "수정할 임시 일정 ID", example = "task-1", required = true)
@@ -490,7 +500,9 @@ public class AiSessionController {
     })
     @DeleteMapping("/{sessionId}/tasks/{tempId}")
     public ApiResponse<Void> deleteTask(
-            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            @Parameter(hidden = true)
+                    @RequestHeader(value = "Authorization", required = false)
+                    String authorizationHeader,
             @Parameter(description = "임시 일정이 속한 세션 ID", required = true) @PathVariable
                     String sessionId,
             @Parameter(description = "삭제할 임시 일정 ID", example = "task-1", required = true)
