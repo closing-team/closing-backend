@@ -1,4 +1,4 @@
-package com.closing.closing.domain.ai.dto;
+package com.closing.closing.domain.ai.dto.response;
 
 import java.util.List;
 
