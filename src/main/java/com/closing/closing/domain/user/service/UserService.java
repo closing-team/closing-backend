@@ -6,8 +6,9 @@ import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,46 +17,30 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final JwtProvider jwtProvider;
 
     @Transactional(readOnly = true)
-    public UserInfoResponse getMyInfo(String authorizationHeader) {
-        Long userId = extractUserId(authorizationHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public UserInfoResponse getMyInfo() {
+        User user = getCurrentUser();
         return UserInfoResponse.from(user);
     }
 
     @Transactional
-    public UserInfoResponse updateMyInfo(String authorizationHeader, UpdateUserRequest request) {
-        Long userId = extractUserId(authorizationHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public UserInfoResponse updateMyInfo(UpdateUserRequest request) {
+        User user = getCurrentUser();
         user.updateInfo(request.getName(), request.getPhone());
         return UserInfoResponse.from(user);
     }
 
     @Transactional
-    public void withdraw(String authorizationHeader) {
-        Long userId = extractUserId(authorizationHeader);
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+    public void withdraw() {
+        User user = getCurrentUser();
         user.withdraw();
     }
 
-    private Long extractUserId(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-        String token = authorizationHeader.substring(7);
-        try {
-            jwtProvider.validate(token);
-        } catch (IllegalArgumentException e) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-        if (jwtProvider.isSignupToken(token)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-        return jwtProvider.getUserId(token);
+    private User getCurrentUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) auth.getPrincipal();
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }
