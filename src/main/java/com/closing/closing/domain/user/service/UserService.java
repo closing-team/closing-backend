@@ -17,6 +17,12 @@ public class UserService {
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
 
+    @Transactional
+    public UserInfoResponse updateMyInfo(String authorizationHeader, UpdateUserRequest request) {
+        Long userId = extractUserId(authorizationHeader);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.updateInfo(request.getName(), request.getPhone());
     @Transactional(readOnly = true)
     public UserInfoResponse getMyInfo(String authorizationHeader) {
         Long userId = extractUserId(authorizationHeader);
