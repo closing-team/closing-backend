@@ -1,9 +1,9 @@
-package com.closing.closing.domain.ai.dto;
+package com.closing.closing.domain.ai.dto.request;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
-public record AiGenerateTaskDto(
+public record AiSessionTaskUpdateRequestDto(
         String title,
         LocalDate startDate,
         LocalTime startTime,

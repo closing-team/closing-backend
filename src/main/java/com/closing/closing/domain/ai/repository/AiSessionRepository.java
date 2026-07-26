@@ -10,4 +10,6 @@ public interface AiSessionRepository {
     AiSession save(AiSession aiSession);
 
     Optional<AiSession> findBySessionId(String sessionId);
+
+    Optional<AiSession> findConfirmedByUserId(Long userId);
 }

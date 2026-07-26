@@ -1,5 +1,6 @@
 package com.closing.closing.domain.user.service;
 
+import com.closing.closing.domain.user.dto.response.UserInfoResponse;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
@@ -22,6 +23,17 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
         user.withdraw();
+    public UserInfoResponse updateMyInfo(String authorizationHeader, UpdateUserRequest request) {
+        Long userId = extractUserId(authorizationHeader);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.updateInfo(request.getName(), request.getPhone());
+    @Transactional(readOnly = true)
+    public UserInfoResponse getMyInfo(String authorizationHeader) {
+        Long userId = extractUserId(authorizationHeader);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        return UserInfoResponse.from(user);
     }
 
     private Long extractUserId(String authorizationHeader) {

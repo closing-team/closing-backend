@@ -27,9 +27,10 @@ public class TaskController {
     @Operation(summary = "일정 추가", description = "일정을 수동으로 추가합니다.")
     @PostMapping
     public ApiResponse<TaskResDTO.CreateTaskResultDTO> createTask(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @Valid @RequestBody TaskReqDTO.CreateTaskDTO request
     ) {
-        return ApiResponse.onSuccess(taskService.createTask(request));
+        return ApiResponse.onSuccess(taskService.createTask(authorizationHeader, request));
     }
 
     /**
@@ -38,10 +39,12 @@ public class TaskController {
     @Operation(summary = "일정 수정", description = "일정을 수정합니다.")
     @PatchMapping("/{taskId}")
     public ApiResponse<TaskResDTO.UpdateTaskResultDTO> updateTask(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable("taskId") Long taskId,
             @Valid @RequestBody TaskReqDTO.UpdateTaskDTO request
     ) {
-        return ApiResponse.onSuccess(taskService.updateTask(taskId, request));
+        return ApiResponse.onSuccess(
+                taskService.updateTask(authorizationHeader, taskId, request));
     }
 
     /**
@@ -50,9 +53,10 @@ public class TaskController {
     @Operation(summary = "일정 삭제", description = "일정을 삭제합니다.")
     @DeleteMapping("/{taskId}")
     public ApiResponse<Void> deleteTask(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable("taskId") Long taskId
     ) {
-        taskService.deleteTask(taskId);
+        taskService.deleteTask(authorizationHeader, taskId);
         return ApiResponse.onSuccess(null);
     }
 
@@ -62,9 +66,10 @@ public class TaskController {
     @Operation(summary = "일정 상세 조회", description = "일정의 상세 정보를 조회합니다.")
     @GetMapping("/{taskId}")
     public ApiResponse<TaskResDTO.TaskDetailDTO> getTask(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable("taskId") Long taskId
     ) {
-        return ApiResponse.onSuccess(taskService.getTask(taskId));
+        return ApiResponse.onSuccess(taskService.getTask(authorizationHeader, taskId));
     }
 
     /**
@@ -73,10 +78,12 @@ public class TaskController {
     @Operation(summary = "일정 완료 처리", description = "일정의 완료 상태를 변경합니다.")
     @PatchMapping("/{taskId}/complete")
     public ApiResponse<TaskResDTO.CompleteTaskResultDTO> completeTask(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @PathVariable("taskId") Long taskId,
             @Valid @RequestBody TaskReqDTO.CompleteTaskDTO request
     ) {
-        return ApiResponse.onSuccess(taskService.completeTask(taskId, request));
+        return ApiResponse.onSuccess(
+                taskService.completeTask(authorizationHeader, taskId, request));
     }
 
     /**
@@ -85,8 +92,9 @@ public class TaskController {
     @Operation(summary = "홈 화면 전체 조회", description = "전체 일정의 진행도와 해당 월의 일정 목록을 조회합니다.")
     @GetMapping("/home")
     public ApiResponse<TaskResDTO.HomeDTO> getHome(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
             @RequestParam("yearMonth") @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth
     ) {
-        return ApiResponse.onSuccess(taskService.getHome(yearMonth));
+        return ApiResponse.onSuccess(taskService.getHome(authorizationHeader, yearMonth));
     }
 }
