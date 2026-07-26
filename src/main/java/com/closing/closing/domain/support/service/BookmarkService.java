@@ -9,6 +9,8 @@ import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
+import com.closing.closing.global.jwt.JwtProvider;
+import io.jsonwebtoken.JwtException;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -27,15 +29,21 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class BookmarkService {
 
+    private static final String BEARER_PREFIX = "Bearer ";
     private static final int MAX_PAGE_SIZE = 100;
     private static final LocalDate LAST_END_DATE = LocalDate.of(9999, 12, 31);
 
     private final BookmarkRepository bookmarkRepository;
     private final SupportRepository supportRepository;
     private final EntityManager entityManager;
+    private final JwtProvider jwtProvider;
 
     @Transactional
-    public BookmarkResDTO.BookmarkCreateDTO createBookmark(Long userId, Long supportId) {
+    public BookmarkResDTO.BookmarkCreateDTO createBookmark(
+            String authorizationHeader,
+            Long supportId) {
+        Long userId = extractUserId(authorizationHeader);
+
         if (supportId == null || supportId <= 0) {
             throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
         }
@@ -67,7 +75,9 @@ public class BookmarkService {
     }
 
     @Transactional
-    public void deleteBookmark(Long userId, Long supportId) {
+    public void deleteBookmark(String authorizationHeader, Long supportId) {
+        Long userId = extractUserId(authorizationHeader);
+
         Bookmark bookmark = bookmarkRepository.findByUser_IdAndSupportInfo_Id(userId, supportId)
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.BOOKMARK_NOT_FOUND));
@@ -76,10 +86,12 @@ public class BookmarkService {
     }
 
     public BookmarkResDTO.BookmarkListDTO getBookmarks(
-            Long userId,
+            String authorizationHeader,
             String sortValue,
             String cursorValue,
             String sizeValue) {
+        Long userId = extractUserId(authorizationHeader);
+
         BookmarkSort sort = BookmarkSort.from(sortValue);
         int size = parseSize(sizeValue);
         BookmarkCursor cursor = parseCursor(sort, cursorValue);
@@ -105,6 +117,32 @@ public class BookmarkService {
                         .hasNext(hasNext)
                         .build())
                 .build();
+    }
+
+    private Long extractUserId(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String token = authorizationHeader.substring(BEARER_PREFIX.length());
+        if (token.isBlank()) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        try {
+            jwtProvider.validate(token);
+            if (jwtProvider.isSignupToken(token)) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED);
+            }
+
+            Long userId = jwtProvider.getUserId(token);
+            if (userId == null) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED);
+            }
+            return userId;
+        } catch (IllegalArgumentException | JwtException exception) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     private List<Bookmark> findBookmarks(

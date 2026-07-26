@@ -2,9 +2,12 @@ package com.closing.closing.domain.support.service;
 
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
+import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
+import com.closing.closing.global.jwt.JwtProvider;
+import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -15,21 +18,27 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class SupportService {
 
+    private static final String BEARER_PREFIX = "Bearer ";
     private static final int MAX_PAGE_SIZE = 100;
     private static final LocalDate LAST_END_DATE = LocalDate.of(9999, 12, 31);
 
     private final SupportRepository supportRepository;
+    private final BookmarkRepository bookmarkRepository;
+    private final JwtProvider jwtProvider;
 
     @Transactional
     public SupportResDTO.SupportDetailDTO getSupport(
             Long supportId,
             String authorizationHeader) {
+        Long userId = extractUserId(authorizationHeader);
+
         int updatedCount = supportRepository.increaseViewCount(supportId);
         if (updatedCount == 0) {
             throw new CustomException(ErrorCode.SUPPORT_NOT_FOUND);
@@ -39,8 +48,9 @@ public class SupportService {
                 .orElseThrow(() -> new CustomException(
                         ErrorCode.SUPPORT_NOT_FOUND));
 
-        // TODO: 인증 추가 후 토큰의 사용자 ID로 북마크 여부 조회 필요
-        return SupportResDTO.SupportDetailDTO.from(supportInfo, false);
+        boolean isBookmarked =
+                bookmarkRepository.existsByUser_IdAndSupportInfo_Id(userId, supportId);
+        return SupportResDTO.SupportDetailDTO.from(supportInfo, isBookmarked);
     }
 
     public SupportResDTO.SupportListDTO getSupports(
@@ -48,6 +58,8 @@ public class SupportService {
             String cursorValue,
             String sizeValue,
             String authorizationHeader) {
+        Long userId = extractUserId(authorizationHeader);
+
         SupportSort sort = SupportSort.from(sortValue);
         int size = parseSize(sizeValue);
         SupportCursor cursor = parseCursor(sort, cursorValue);
@@ -57,9 +69,11 @@ public class SupportService {
         boolean hasNext = result.size() > size;
         List<SupportInfo> supports = hasNext ? result.subList(0, size) : result;
 
-        // TODO: 인증 추가 후 토큰의 사용자 ID로 북마크 여부 조회 필요
+        Set<Long> bookmarkedSupportIds = findBookmarkedSupportIds(userId, supports);
         List<SupportResDTO.SupportSummaryDTO> supportDTOs = supports.stream()
-                .map(support -> SupportResDTO.SupportSummaryDTO.from(support, false))
+                .map(support -> SupportResDTO.SupportSummaryDTO.from(
+                        support,
+                        bookmarkedSupportIds.contains(support.getId())))
                 .toList();
 
         String nextCursor = hasNext
@@ -73,6 +87,20 @@ public class SupportService {
                         .hasNext(hasNext)
                         .build())
                 .build();
+    }
+
+    private Set<Long> findBookmarkedSupportIds(
+            Long userId,
+            List<SupportInfo> supports) {
+        if (supports.isEmpty()) {
+            return Set.of();
+        }
+
+        List<Long> supportIds = supports.stream()
+                .map(SupportInfo::getId)
+                .toList();
+        return Set.copyOf(
+                bookmarkRepository.findBookmarkedSupportIds(userId, supportIds));
     }
 
     private List<SupportInfo> findSupports(
@@ -147,6 +175,32 @@ public class SupportService {
                     : supportInfo.getApplyEndDate()).toString();
         };
         return sortCursor + "_" + supportInfo.getId();
+    }
+
+    private Long extractUserId(String authorizationHeader) {
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        String token = authorizationHeader.substring(BEARER_PREFIX.length());
+        if (token.isBlank()) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
+
+        try {
+            jwtProvider.validate(token);
+            if (jwtProvider.isSignupToken(token)) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED);
+            }
+
+            Long userId = jwtProvider.getUserId(token);
+            if (userId == null) {
+                throw new CustomException(ErrorCode.UNAUTHORIZED);
+            }
+            return userId;
+        } catch (IllegalArgumentException | JwtException exception) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     private enum SupportSort {
