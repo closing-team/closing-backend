@@ -18,6 +18,11 @@ public class UserService {
     private final JwtProvider jwtProvider;
 
     @Transactional
+    public void withdraw(String authorizationHeader) {
+        Long userId = extractUserId(authorizationHeader);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        user.withdraw();
     public UserInfoResponse updateMyInfo(String authorizationHeader, UpdateUserRequest request) {
         Long userId = extractUserId(authorizationHeader);
         User user = userRepository.findById(userId)

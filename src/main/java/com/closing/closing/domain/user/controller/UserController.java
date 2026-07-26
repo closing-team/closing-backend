@@ -17,6 +17,12 @@ public class UserController {
 
     private final UserService userService;
 
+    @Operation(summary = "회원 탈퇴")
+    @DeleteMapping("/me")
+    public ApiResponse<Void> withdraw(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        userService.withdraw(authorizationHeader);
+        return ApiResponse.onSuccess(null);
     @Operation(summary = "내 정보 수정 (이름·전화번호)")
     @PatchMapping("/me")
     public ApiResponse<UserInfoResponse> updateMyInfo(
