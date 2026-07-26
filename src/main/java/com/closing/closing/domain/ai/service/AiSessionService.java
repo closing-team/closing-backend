@@ -454,12 +454,18 @@ public class AiSessionService {
 
     private Long extractUserId(String authorizationHeader) {
         String token = extractToken(authorizationHeader);
+        Long userId;
         try {
             jwtProvider.validate(token);
-        } catch (IllegalArgumentException e) {
+            userId = jwtProvider.getUserId(token);
+        } catch (Exception e) {
             throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
         }
-        return jwtProvider.getUserId(token);
+        // userId claim이 없는 토큰은 예외 없이 null을 반환하므로 별도로 차단
+        if (userId == null) {
+            throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
+        }
+        return userId;
     }
 
     private String extractToken(String authorizationHeader) {
