@@ -4,11 +4,11 @@ import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
-import com.closing.closing.domain.support.exception.SupportException;
-import com.closing.closing.domain.support.exception.code.SupportErrorCode;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.domain.user.entity.User;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -37,15 +37,15 @@ public class BookmarkService {
     @Transactional
     public BookmarkResDTO.BookmarkCreateDTO createBookmark(Long userId, Long supportId) {
         if (supportId == null || supportId <= 0) {
-            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
         }
 
         SupportInfo supportInfo = supportRepository.findById(supportId)
-                .orElseThrow(() -> new SupportException(
-                        SupportErrorCode.SUPPORT_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.SUPPORT_NOT_FOUND));
 
         if (bookmarkRepository.existsByUser_IdAndSupportInfo_Id(userId, supportId)) {
-            throw new SupportException(SupportErrorCode.BOOKMARK_ALREADY_EXISTS);
+            throw new CustomException(ErrorCode.BOOKMARK_ALREADY_EXISTS);
         }
 
         User user = entityManager.getReference(User.class, userId);
@@ -60,7 +60,7 @@ public class BookmarkService {
         } catch (DataIntegrityViolationException exception) {
             // 사전 중복 확인 이후 동시에 저장된 경우에도 UNIQUE 제약으로 중복을 차단한다.
             if (isUniqueConstraintViolation(exception)) {
-                throw new SupportException(SupportErrorCode.BOOKMARK_ALREADY_EXISTS);
+                throw new CustomException(ErrorCode.BOOKMARK_ALREADY_EXISTS);
             }
             throw exception;
         }
@@ -69,8 +69,8 @@ public class BookmarkService {
     @Transactional
     public void deleteBookmark(Long userId, Long supportId) {
         Bookmark bookmark = bookmarkRepository.findByUser_IdAndSupportInfo_Id(userId, supportId)
-                .orElseThrow(() -> new SupportException(
-                        SupportErrorCode.BOOKMARK_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(
+                        ErrorCode.BOOKMARK_NOT_FOUND));
 
         bookmarkRepository.delete(bookmark);
     }
@@ -127,11 +127,11 @@ public class BookmarkService {
         try {
             int size = Integer.parseInt(value);
             if (size < 1 || size > MAX_PAGE_SIZE) {
-                throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+                throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
             }
             return size;
         } catch (NumberFormatException exception) {
-            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
         }
     }
 
@@ -148,7 +148,7 @@ public class BookmarkService {
 
             int separatorIndex = value.lastIndexOf('_');
             if (separatorIndex <= 0 || separatorIndex == value.length() - 1) {
-                throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+                throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
             }
 
             String sortCursor = value.substring(0, separatorIndex);
@@ -157,21 +157,21 @@ public class BookmarkService {
             if (sort == BookmarkSort.POPULAR) {
                 int viewCount = Integer.parseInt(sortCursor);
                 if (viewCount < 0) {
-                    throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+                    throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
                 }
                 return BookmarkCursor.popular(bookmarkId, viewCount);
             }
 
             return BookmarkCursor.deadline(bookmarkId, LocalDate.parse(sortCursor));
         } catch (NumberFormatException | DateTimeParseException exception) {
-            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
         }
     }
 
     private long parseBookmarkId(String value) {
         long bookmarkId = Long.parseLong(value);
         if (bookmarkId <= 0) {
-            throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+            throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
         }
         return bookmarkId;
     }
@@ -197,7 +197,7 @@ public class BookmarkService {
             try {
                 return BookmarkSort.valueOf(value);
             } catch (IllegalArgumentException | NullPointerException exception) {
-                throw new SupportException(SupportErrorCode.BOOKMARK_INVALID_QUERY);
+                throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
             }
         }
     }

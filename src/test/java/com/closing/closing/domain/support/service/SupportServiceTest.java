@@ -3,9 +3,9 @@ package com.closing.closing.domain.support.service;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.entity.SupportStatus;
-import com.closing.closing.domain.support.exception.SupportException;
-import com.closing.closing.domain.support.exception.code.SupportErrorCode;
 import com.closing.closing.domain.support.repository.SupportRepository;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -83,12 +83,12 @@ class SupportServiceTest {
         when(supportRepository.increaseViewCount(supportId)).thenReturn(0);
 
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupport(supportId, null));
 
         assertEquals(
-                SupportErrorCode.SUPPORT_NOT_FOUND,
-                exception.getSupportErrorCode());
+                ErrorCode.SUPPORT_NOT_FOUND,
+                exception.getErrorCode());
         verify(supportRepository, never()).findById(supportId);
     }
 
@@ -157,36 +157,36 @@ class SupportServiceTest {
     @DisplayName("지원하지 않는 정렬값이면 COMMON400 예외 발생")
     void getSupports_Fail_WhenSortIsInvalid() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupports("OLDEST", null, "20", null));
 
         assertEquals(
-                SupportErrorCode.SUPPORT_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.SUPPORT_INVALID_QUERY,
+                exception.getErrorCode());
     }
 
     @Test
     @DisplayName("커서 형식이 잘못되면 COMMON400 예외 발생")
     void getSupports_Fail_WhenCursorIsInvalid() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupports("POPULAR", "invalid", "20", null));
 
         assertEquals(
-                SupportErrorCode.SUPPORT_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.SUPPORT_INVALID_QUERY,
+                exception.getErrorCode());
     }
 
     @Test
     @DisplayName("페이지 크기가 허용 범위를 벗어나면 COMMON400 예외 발생")
     void getSupports_Fail_WhenSizeIsOutOfRange() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupports("POPULAR", null, "101", null));
 
         assertEquals(
-                SupportErrorCode.SUPPORT_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.SUPPORT_INVALID_QUERY,
+                exception.getErrorCode());
     }
 
     private SupportInfo createSupport(Long id, String title, int viewCount) throws Exception {

@@ -4,11 +4,11 @@ import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.entity.SupportStatus;
-import com.closing.closing.domain.support.exception.SupportException;
-import com.closing.closing.domain.support.exception.code.SupportErrorCode;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.domain.user.entity.User;
+import com.closing.closing.global.exception.CustomException;
+import com.closing.closing.global.exception.ErrorCode;
 import com.closing.closing.global.entity.BaseCreatedEntity;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
@@ -95,12 +95,12 @@ class BookmarkServiceTest {
     @DisplayName("북마크 추가 시 지원정보 ID가 null이면 COMMON400 예외 발생")
     void createBookmark_Fail_WhenSupportIdIsNull() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.createBookmark(1L, null));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getErrorCode());
         verify(supportRepository, never()).findById(any());
     }
 
@@ -108,12 +108,12 @@ class BookmarkServiceTest {
     @DisplayName("북마크 추가 시 지원정보 ID가 양수가 아니면 COMMON400 예외 발생")
     void createBookmark_Fail_WhenSupportIdIsNotPositive() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.createBookmark(1L, 0L));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getErrorCode());
         verify(supportRepository, never()).findById(any());
     }
 
@@ -126,12 +126,12 @@ class BookmarkServiceTest {
         when(supportRepository.findById(supportId)).thenReturn(Optional.empty());
 
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.createBookmark(userId, supportId));
 
         assertEquals(
-                SupportErrorCode.SUPPORT_NOT_FOUND,
-                exception.getSupportErrorCode());
+                ErrorCode.SUPPORT_NOT_FOUND,
+                exception.getErrorCode());
         verify(bookmarkRepository, never())
                 .existsByUser_IdAndSupportInfo_Id(userId, supportId);
     }
@@ -148,12 +148,12 @@ class BookmarkServiceTest {
                 .thenReturn(true);
 
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.createBookmark(userId, supportId));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_ALREADY_EXISTS,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_ALREADY_EXISTS,
+                exception.getErrorCode());
         verify(bookmarkRepository, never()).saveAndFlush(any(Bookmark.class));
     }
 
@@ -178,12 +178,12 @@ class BookmarkServiceTest {
                         new SQLException("unique violation", "23505")));
 
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.createBookmark(userId, supportId));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_ALREADY_EXISTS,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_ALREADY_EXISTS,
+                exception.getErrorCode());
     }
 
     @Test
@@ -249,12 +249,12 @@ class BookmarkServiceTest {
                 .thenReturn(Optional.empty());
 
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.deleteBookmark(userId, supportId));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_NOT_FOUND,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_NOT_FOUND,
+                exception.getErrorCode());
         verify(bookmarkRepository, never()).delete(any(Bookmark.class));
     }
 
@@ -359,39 +359,39 @@ class BookmarkServiceTest {
     @DisplayName("지원하지 않는 북마크 정렬값이면 COMMON400 예외 발생")
     void getBookmarks_Fail_WhenSortIsInvalid() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.getBookmarks(
                         1L, "OLDEST", null, "20"));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getErrorCode());
     }
 
     @Test
     @DisplayName("북마크 커서 형식이 잘못되면 COMMON400 예외 발생")
     void getBookmarks_Fail_WhenCursorIsInvalid() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.getBookmarks(
                         1L, "POPULAR", "invalid", "20"));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getErrorCode());
     }
 
     @Test
     @DisplayName("북마크 페이지 크기가 허용 범위를 벗어나면 COMMON400 예외 발생")
     void getBookmarks_Fail_WhenSizeIsOutOfRange() {
         // when & then
-        SupportException exception = assertThrows(SupportException.class,
+        CustomException exception = assertThrows(CustomException.class,
                 () -> bookmarkService.getBookmarks(
                         1L, "LATEST", null, "101"));
 
         assertEquals(
-                SupportErrorCode.BOOKMARK_INVALID_QUERY,
-                exception.getSupportErrorCode());
+                ErrorCode.BOOKMARK_INVALID_QUERY,
+                exception.getErrorCode());
     }
 
     private Bookmark createBookmark(

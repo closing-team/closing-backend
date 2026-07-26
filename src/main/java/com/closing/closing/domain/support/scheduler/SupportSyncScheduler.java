@@ -1,7 +1,7 @@
 package com.closing.closing.domain.support.scheduler;
 
-import com.closing.closing.domain.support.exception.SupportException;
 import com.closing.closing.domain.support.service.SupportSyncService;
+import com.closing.closing.global.exception.CustomException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,9 +21,9 @@ public class SupportSyncScheduler {
         try {
             int syncedCount = supportSyncService.syncClosureSupports();
             log.info("기업마당 폐업지원 공고 동기화 완료: {}건", syncedCount);
-        } catch (SupportException exception) {
+        } catch (CustomException exception) {
             log.warn("기업마당 폐업지원 공고 동기화 실패: {}",
-                    exception.getSupportErrorCode().name());
+                    exception.getErrorCode().name());
         }
     }
 }
