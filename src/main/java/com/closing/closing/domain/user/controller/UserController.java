@@ -1,5 +1,6 @@
 package com.closing.closing.domain.user.controller;
 
+import com.closing.closing.domain.user.dto.request.UpdateUserRequest;
 import com.closing.closing.domain.user.dto.response.UserInfoResponse;
 import com.closing.closing.domain.user.service.UserService;
 import com.closing.closing.global.response.ApiResponse;
@@ -17,22 +18,26 @@ public class UserController {
 
     private final UserService userService;
 
-    @Operation(summary = "회원 탈퇴")
-    @DeleteMapping("/me")
-    public ApiResponse<Void> withdraw(
+    @Operation(summary = "내 정보 조회")
+    @GetMapping("/me")
+    public ApiResponse<UserInfoResponse> getMyInfo(
             @RequestHeader("Authorization") String authorizationHeader) {
-        userService.withdraw(authorizationHeader);
-        return ApiResponse.onSuccess(null);
+        return ApiResponse.onSuccess(userService.getMyInfo(authorizationHeader));
+    }
+
     @Operation(summary = "내 정보 수정 (이름·전화번호)")
     @PatchMapping("/me")
     public ApiResponse<UserInfoResponse> updateMyInfo(
             @RequestHeader("Authorization") String authorizationHeader,
             @Valid @RequestBody UpdateUserRequest request) {
         return ApiResponse.onSuccess(userService.updateMyInfo(authorizationHeader, request));
-    @Operation(summary = "내 정보 조회")
-    @GetMapping("/me")
-    public ApiResponse<UserInfoResponse> getMyInfo(
+    }
+
+    @Operation(summary = "회원 탈퇴")
+    @DeleteMapping("/me")
+    public ApiResponse<Void> withdraw(
             @RequestHeader("Authorization") String authorizationHeader) {
-        return ApiResponse.onSuccess(userService.getMyInfo(authorizationHeader));
+        userService.withdraw(authorizationHeader);
+        return ApiResponse.onSuccess(null);
     }
 }
