@@ -1,6 +1,5 @@
 package com.closing.closing.domain.user.controller;
 
-import com.closing.closing.domain.user.dto.request.UpdateUserRequest;
 import com.closing.closing.domain.user.dto.response.UserInfoResponse;
 import com.closing.closing.domain.user.service.UserService;
 import com.closing.closing.global.response.ApiResponse;
@@ -24,5 +23,10 @@ public class UserController {
             @RequestHeader("Authorization") String authorizationHeader,
             @Valid @RequestBody UpdateUserRequest request) {
         return ApiResponse.onSuccess(userService.updateMyInfo(authorizationHeader, request));
+    @Operation(summary = "내 정보 조회")
+    @GetMapping("/me")
+    public ApiResponse<UserInfoResponse> getMyInfo(
+            @RequestHeader("Authorization") String authorizationHeader) {
+        return ApiResponse.onSuccess(userService.getMyInfo(authorizationHeader));
     }
 }
