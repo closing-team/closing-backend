@@ -8,8 +8,6 @@ import com.closing.closing.domain.task.entity.TaskSource;
 import com.closing.closing.domain.task.repository.TaskRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,90 +26,22 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TaskServiceTest {
 
     private static final Long USER_ID = 1L;
-    private static final String TOKEN = "access-token";
-    private static final String AUTHORIZATION_HEADER = "Bearer " + TOKEN;
 
     @Mock
     private TaskRepository taskRepository;
-
-    @Mock
-    private JwtProvider jwtProvider;
 
     @Mock
     private BusinessRegistration businessRegistration;
 
     @InjectMocks
     private TaskService taskService;
-
-    @BeforeEach
-    void setUpAuthentication() {
-        lenient().when(jwtProvider.isSignupToken(TOKEN)).thenReturn(false);
-        lenient().when(jwtProvider.getUserId(TOKEN)).thenReturn(USER_ID);
-    }
-
-    @Test
-    @DisplayName("Authorization 헤더가 없으면 인증 실패")
-    void authentication_Fail_WhenAuthorizationHeaderMissing() {
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> taskService.getHome(null, YearMonth.of(2026, 7))
-        );
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(taskRepository);
-    }
-
-    @Test
-    @DisplayName("Bearer 형식이 아니면 인증 실패")
-    void authentication_Fail_WhenAuthorizationHeaderMalformed() {
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> taskService.getHome(TOKEN, YearMonth.of(2026, 7))
-        );
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(taskRepository);
-    }
-
-    @Test
-    @DisplayName("유효하지 않은 토큰이면 인증 실패")
-    void authentication_Fail_WhenTokenInvalid() {
-        doThrow(new IllegalArgumentException("유효하지 않은 토큰입니다."))
-                .when(jwtProvider)
-                .validate("invalid-token");
-
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> taskService.getHome("Bearer invalid-token", YearMonth.of(2026, 7))
-        );
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(taskRepository);
-    }
-
-    @Test
-    @DisplayName("가입 토큰으로 Task API에 접근할 수 없다")
-    void authentication_Fail_WhenSignupToken() {
-        when(jwtProvider.isSignupToken(TOKEN)).thenReturn(true);
-
-        CustomException exception = assertThrows(
-                CustomException.class,
-                () -> taskService.getHome(AUTHORIZATION_HEADER, YearMonth.of(2026, 7))
-        );
-
-        assertEquals(ErrorCode.UNAUTHORIZED, exception.getErrorCode());
-        verifyNoInteractions(taskRepository);
-    }
 
     @Test
     @DisplayName("일정 생성 성공")
@@ -146,7 +76,7 @@ class TaskServiceTest {
 
         // when
         TaskResDTO.CreateTaskResultDTO result =
-                taskService.createTask(AUTHORIZATION_HEADER, request);
+                taskService.createTask(USER_ID, request);
 
         // then
         verify(taskRepository).save(argThat(task -> task.getRegistration() == businessRegistration));
@@ -171,7 +101,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.createTask(AUTHORIZATION_HEADER, request));
+                () -> taskService.createTask(USER_ID, request));
 
         assertEquals(ErrorCode.TASK_TITLE_BLANK, exception.getErrorCode());
     }
@@ -191,7 +121,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.createTask(AUTHORIZATION_HEADER, request));
+                () -> taskService.createTask(USER_ID, request));
 
         assertEquals(ErrorCode.TASK_TITLE_BLANK, exception.getErrorCode());
     }
@@ -213,7 +143,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.createTask(AUTHORIZATION_HEADER, request));
+                () -> taskService.createTask(USER_ID, request));
 
         assertEquals(ErrorCode.USER_NOT_FOUND, exception.getErrorCode());
     }
@@ -250,7 +180,7 @@ class TaskServiceTest {
 
         // when
         TaskResDTO.UpdateTaskResultDTO result =
-                taskService.updateTask(AUTHORIZATION_HEADER, taskId, request);
+                taskService.updateTask(USER_ID, taskId, request);
 
         // then
         assertEquals("제목 변경", result.title());
@@ -274,7 +204,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.updateTask(AUTHORIZATION_HEADER, taskId, request));
+                () -> taskService.updateTask(USER_ID, taskId, request));
 
         assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
@@ -299,7 +229,7 @@ class TaskServiceTest {
                 .thenReturn(Optional.of(existingTask));
 
         // when & then
-        assertDoesNotThrow(() -> taskService.deleteTask(AUTHORIZATION_HEADER, taskId));
+        assertDoesNotThrow(() -> taskService.deleteTask(USER_ID, taskId));
         verify(taskRepository).delete(existingTask);
     }
 
@@ -314,7 +244,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.deleteTask(AUTHORIZATION_HEADER, taskId));
+                () -> taskService.deleteTask(USER_ID, taskId));
 
         assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
@@ -342,7 +272,7 @@ class TaskServiceTest {
 
         // when
         TaskResDTO.TaskDetailDTO result =
-                taskService.getTask(AUTHORIZATION_HEADER, taskId);
+                taskService.getTask(USER_ID, taskId);
 
         // then
         assertEquals("매장 철거 업체 미팅", result.title());
@@ -368,7 +298,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.getTask(AUTHORIZATION_HEADER, taskId));
+                () -> taskService.getTask(USER_ID, taskId));
 
         assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
@@ -383,7 +313,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.getTask(AUTHORIZATION_HEADER, taskId));
+                () -> taskService.getTask(USER_ID, taskId));
 
         assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
@@ -409,7 +339,7 @@ class TaskServiceTest {
 
         // when
         TaskResDTO.CompleteTaskResultDTO result =
-                taskService.completeTask(AUTHORIZATION_HEADER, taskId, request);
+                taskService.completeTask(USER_ID, taskId, request);
 
         // then
         assertTrue(result.isCompleted());
@@ -437,7 +367,7 @@ class TaskServiceTest {
 
         // when
         TaskResDTO.CompleteTaskResultDTO result =
-                taskService.completeTask(AUTHORIZATION_HEADER, taskId, request);
+                taskService.completeTask(USER_ID, taskId, request);
 
         // then
         assertFalse(result.isCompleted());
@@ -455,7 +385,7 @@ class TaskServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> taskService.completeTask(AUTHORIZATION_HEADER, taskId, request));
+                () -> taskService.completeTask(USER_ID, taskId, request));
 
         assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
     }
@@ -485,7 +415,7 @@ class TaskServiceTest {
                 .thenReturn(List.of(julyTask));
 
         // when
-        TaskResDTO.HomeDTO result = taskService.getHome(AUTHORIZATION_HEADER, yearMonth);
+        TaskResDTO.HomeDTO result = taskService.getHome(USER_ID, yearMonth);
 
         // then - 진행도: 전체 기준 (2개 중 1개 완료 = 50%)
         assertEquals(2, result.summary().totalCount());
@@ -512,7 +442,7 @@ class TaskServiceTest {
                 .thenReturn(List.of());
 
         // when
-        TaskResDTO.HomeDTO result = taskService.getHome(AUTHORIZATION_HEADER, yearMonth);
+        TaskResDTO.HomeDTO result = taskService.getHome(USER_ID, yearMonth);
 
         // then
         assertEquals(0, result.summary().totalCount());

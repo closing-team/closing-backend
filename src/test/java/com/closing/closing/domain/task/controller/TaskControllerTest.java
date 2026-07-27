@@ -2,18 +2,20 @@ package com.closing.closing.domain.task.controller;
 
 import com.closing.closing.domain.task.dto.TaskResDTO;
 import com.closing.closing.domain.task.service.TaskService;
-import com.closing.closing.global.exception.CustomException;
-import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpHeaders;
+import org.springframework.core.MethodParameter;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.bind.support.WebDataBinderFactory;
+import org.springframework.web.context.request.NativeWebRequest;
+import org.springframework.web.method.support.HandlerMethodArgumentResolver;
+import org.springframework.web.method.support.ModelAndViewContainer;
 
 import java.time.YearMonth;
 import java.util.List;
@@ -27,6 +29,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class TaskControllerTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private TaskService taskService;
 
@@ -37,24 +41,8 @@ class TaskControllerTest {
         TaskController taskController = new TaskController(taskService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(taskController)
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .build();
-    }
-
-    @Test
-    @DisplayName("인증 헤더가 없으면 Task API 접근에 실패한다")
-    void getHome_Fail_WhenAuthorizationHeaderMissing() throws Exception {
-        YearMonth yearMonth = YearMonth.of(2026, 7);
-        when(taskService.getHome(null, yearMonth))
-                .thenThrow(new CustomException(ErrorCode.UNAUTHORIZED));
-
-        mockMvc.perform(get("/api/v1/tasks/home")
-                        .param("yearMonth", "2026-07"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value("COMMON401"));
-
-        verify(taskService).getHome(null, yearMonth);
     }
 
     @Test
@@ -70,15 +58,33 @@ class TaskControllerTest {
                 .calendar(List.of())
                 .build();
 
-        when(taskService.getHome("Bearer access-token", yearMonth)).thenReturn(response);
+        when(taskService.getHome(USER_ID, yearMonth)).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/tasks/home")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token")
                         .param("yearMonth", "2026-07"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.summary.totalCount").value(0));
 
-        verify(taskService).getHome("Bearer access-token", yearMonth);
+        verify(taskService).getHome(USER_ID, yearMonth);
+    }
+
+    private static class AuthenticationPrincipalArgumentResolver
+            implements HandlerMethodArgumentResolver {
+
+        @Override
+        public boolean supportsParameter(MethodParameter parameter) {
+            return parameter.hasParameterAnnotation(AuthenticationPrincipal.class);
+        }
+
+        @Override
+        public Object resolveArgument(
+                MethodParameter parameter,
+                ModelAndViewContainer mavContainer,
+                NativeWebRequest webRequest,
+                WebDataBinderFactory binderFactory
+        ) {
+            return USER_ID;
+        }
     }
 }
