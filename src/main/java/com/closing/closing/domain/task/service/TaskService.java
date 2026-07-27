@@ -8,8 +8,6 @@ import com.closing.closing.domain.task.entity.TaskSource;
 import com.closing.closing.domain.task.repository.TaskRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
-import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,18 +21,13 @@ import java.util.List;
 @Transactional(readOnly = true)
 public class TaskService {
 
-    private static final String BEARER_PREFIX = "Bearer ";
-
     private final TaskRepository taskRepository;
-    private final JwtProvider jwtProvider;
 
     @Transactional
     public TaskResDTO.CreateTaskResultDTO createTask(
-            String authorizationHeader,
+            Long userId,
             TaskReqDTO.CreateTaskDTO request
     ) {
-        Long userId = extractUserId(authorizationHeader);
-
         if (request.title() == null || request.title().isBlank()) {
             throw new CustomException(ErrorCode.TASK_TITLE_BLANK);
         }
@@ -60,11 +53,10 @@ public class TaskService {
 
     @Transactional
     public TaskResDTO.UpdateTaskResultDTO updateTask(
-            String authorizationHeader,
+            Long userId,
             Long taskId,
             TaskReqDTO.UpdateTaskDTO request
     ) {
-        Long userId = extractUserId(authorizationHeader);
         Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
@@ -81,16 +73,14 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteTask(String authorizationHeader, Long taskId) {
-        Long userId = extractUserId(authorizationHeader);
+    public void deleteTask(Long userId, Long taskId) {
         Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         taskRepository.delete(task);
     }
 
-    public TaskResDTO.TaskDetailDTO getTask(String authorizationHeader, Long taskId) {
-        Long userId = extractUserId(authorizationHeader);
+    public TaskResDTO.TaskDetailDTO getTask(Long userId, Long taskId) {
         Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
@@ -99,11 +89,10 @@ public class TaskService {
 
     @Transactional
     public TaskResDTO.CompleteTaskResultDTO completeTask(
-            String authorizationHeader,
+            Long userId,
             Long taskId,
             TaskReqDTO.CompleteTaskDTO request
     ) {
-        Long userId = extractUserId(authorizationHeader);
         Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
@@ -112,8 +101,7 @@ public class TaskService {
         return TaskResDTO.CompleteTaskResultDTO.from(task);
     }
 
-    public TaskResDTO.HomeDTO getHome(String authorizationHeader, YearMonth yearMonth) {
-        Long userId = extractUserId(authorizationHeader);
+    public TaskResDTO.HomeDTO getHome(Long userId, YearMonth yearMonth) {
         long totalCount = taskRepository.countByRegistration_User_Id(userId);
         long completedCount = taskRepository.countByRegistration_User_IdAndIsCompletedTrue(userId);
         double progressRate = totalCount == 0 ? 0.0
@@ -139,31 +127,5 @@ public class TaskService {
                 .summary(summary)
                 .calendar(calendar)
                 .build();
-    }
-
-    private Long extractUserId(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        String token = authorizationHeader.substring(BEARER_PREFIX.length());
-        if (token.isBlank()) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
-
-        try {
-            jwtProvider.validate(token);
-            if (jwtProvider.isSignupToken(token)) {
-                throw new CustomException(ErrorCode.UNAUTHORIZED);
-            }
-
-            Long userId = jwtProvider.getUserId(token);
-            if (userId == null) {
-                throw new CustomException(ErrorCode.UNAUTHORIZED);
-            }
-            return userId;
-        } catch (IllegalArgumentException | JwtException e) {
-            throw new CustomException(ErrorCode.UNAUTHORIZED);
-        }
     }
 }
