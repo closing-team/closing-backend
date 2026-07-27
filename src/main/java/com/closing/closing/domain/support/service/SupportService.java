@@ -1,6 +1,5 @@
 package com.closing.closing.domain.support.service;
 
-import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
@@ -29,14 +28,11 @@ public class SupportService {
 
     private final SupportRepository supportRepository;
     private final BookmarkRepository bookmarkRepository;
-    private final SupportAuthentication supportAuthentication;
 
     @Transactional
     public SupportResDTO.SupportDetailDTO getSupport(
-            Long supportId,
-            String authorizationHeader) {
-        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
-
+            Long userId,
+            Long supportId) {
         int updatedCount = supportRepository.increaseViewCount(supportId);
         if (updatedCount == 0) {
             throw new CustomException(ErrorCode.SUPPORT_NOT_FOUND);
@@ -52,12 +48,10 @@ public class SupportService {
     }
 
     public SupportResDTO.SupportListDTO getSupports(
+            Long userId,
             String sortValue,
             String cursorValue,
-            String sizeValue,
-            String authorizationHeader) {
-        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
-
+            String sizeValue) {
         SupportSort sort = SupportSort.from(sortValue);
         int size = parseSize(sizeValue);
         SupportCursor cursor = parseCursor(sort, cursorValue);

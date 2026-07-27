@@ -1,6 +1,5 @@
 package com.closing.closing.domain.support.service;
 
-import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.entity.SupportStatus;
@@ -8,7 +7,6 @@ import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,7 +34,6 @@ import static org.mockito.Mockito.when;
 class SupportServiceTest {
 
     private static final Long USER_ID = 1L;
-    private static final String AUTHORIZATION_HEADER = "Bearer access-token";
 
     @Mock
     private SupportRepository supportRepository;
@@ -45,17 +41,8 @@ class SupportServiceTest {
     @Mock
     private BookmarkRepository bookmarkRepository;
 
-    @Mock
-    private SupportAuthentication supportAuthentication;
-
     @InjectMocks
     private SupportService supportService;
-
-    @BeforeEach
-    void setUpAuthentication() {
-        lenient().when(supportAuthentication.resolveUserId(AUTHORIZATION_HEADER))
-                .thenReturn(USER_ID);
-    }
 
     @Test
     @DisplayName("지원정보 상세 조회 성공 및 조회수 증가")
@@ -82,7 +69,7 @@ class SupportServiceTest {
 
         // when
         SupportResDTO.SupportDetailDTO result =
-                supportService.getSupport(supportId, AUTHORIZATION_HEADER);
+                supportService.getSupport(USER_ID, supportId);
 
         // then
         assertEquals(supportId, result.supportId());
@@ -105,7 +92,7 @@ class SupportServiceTest {
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
-                () -> supportService.getSupport(supportId, AUTHORIZATION_HEADER));
+                () -> supportService.getSupport(USER_ID, supportId));
 
         assertEquals(
                 ErrorCode.SUPPORT_NOT_FOUND,
@@ -130,7 +117,7 @@ class SupportServiceTest {
 
         // when
         SupportResDTO.SupportListDTO result = supportService.getSupports(
-                "POPULAR", null, "2", AUTHORIZATION_HEADER);
+                USER_ID, "POPULAR", null, "2");
 
         // then
         assertEquals(2, result.supports().size());
@@ -157,7 +144,7 @@ class SupportServiceTest {
 
         // when
         SupportResDTO.SupportListDTO result = supportService.getSupports(
-                "POPULAR", null, "20", AUTHORIZATION_HEADER);
+                USER_ID, "POPULAR", null, "20");
 
         // then
         assertEquals(1, result.supports().size());
@@ -175,7 +162,7 @@ class SupportServiceTest {
 
         // when
         supportService.getSupports(
-                "POPULAR", "1520_1", "20", AUTHORIZATION_HEADER);
+                USER_ID, "POPULAR", "1520_1", "20");
 
         // then
         verify(supportRepository).findAllByPopular(
@@ -188,7 +175,7 @@ class SupportServiceTest {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupports(
-                        "OLDEST", null, "20", AUTHORIZATION_HEADER));
+                        USER_ID, "OLDEST", null, "20"));
 
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
@@ -201,7 +188,7 @@ class SupportServiceTest {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupports(
-                        "POPULAR", "invalid", "20", AUTHORIZATION_HEADER));
+                        USER_ID, "POPULAR", "invalid", "20"));
 
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
@@ -214,7 +201,7 @@ class SupportServiceTest {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
                 () -> supportService.getSupports(
-                        "POPULAR", null, "101", AUTHORIZATION_HEADER));
+                        USER_ID, "POPULAR", null, "101"));
 
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
