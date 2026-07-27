@@ -1,10 +1,10 @@
 package com.closing.closing.domain.support.service;
 
-import com.closing.closing.domain.support.auth.SupportAuthentication;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
+import com.closing.closing.domain.support.enums.SupportSort;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +29,11 @@ public class SupportService {
 
     private final SupportRepository supportRepository;
     private final BookmarkRepository bookmarkRepository;
-    private final SupportAuthentication supportAuthentication;
 
     @Transactional
     public SupportResDTO.SupportDetailDTO getSupport(
-            Long supportId,
-            String authorizationHeader) {
-        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
-
+            Long userId,
+            Long supportId) {
         int updatedCount = supportRepository.increaseViewCount(supportId);
         if (updatedCount == 0) {
             throw new CustomException(ErrorCode.SUPPORT_NOT_FOUND);
@@ -52,12 +49,10 @@ public class SupportService {
     }
 
     public SupportResDTO.SupportListDTO getSupports(
+            Long userId,
             String sortValue,
             String cursorValue,
-            String sizeValue,
-            String authorizationHeader) {
-        Long userId = supportAuthentication.resolveUserId(authorizationHeader);
-
+            String sizeValue) {
         SupportSort sort = SupportSort.from(sortValue);
         int size = parseSize(sizeValue);
         SupportCursor cursor = parseCursor(sort, cursorValue);
@@ -173,20 +168,6 @@ public class SupportService {
                     : supportInfo.getApplyEndDate()).toString();
         };
         return sortCursor + "_" + supportInfo.getId();
-    }
-
-    private enum SupportSort {
-        POPULAR,
-        LATEST,
-        DEADLINE;
-
-        private static SupportSort from(String value) {
-            try {
-                return SupportSort.valueOf(value);
-            } catch (IllegalArgumentException | NullPointerException exception) {
-                throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
-            }
-        }
     }
 
     private record SupportCursor(

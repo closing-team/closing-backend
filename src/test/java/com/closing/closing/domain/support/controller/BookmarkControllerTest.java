@@ -3,16 +3,12 @@ package com.closing.closing.domain.support.controller;
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.service.BookmarkService;
-import com.closing.closing.global.exception.CustomException;
-import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -27,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class BookmarkControllerTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private BookmarkService bookmarkService;
 
@@ -37,27 +35,14 @@ class BookmarkControllerTest {
         BookmarkController bookmarkController = new BookmarkController(bookmarkService);
 
         mockMvc = MockMvcBuilders.standaloneSetup(bookmarkController)
-                .setControllerAdvice(new GlobalExceptionHandler())
+                .setCustomArgumentResolvers(
+                        new TestPrincipalResolver(USER_ID))
                 .build();
     }
 
     @Test
-    @DisplayName("인증 헤더가 없으면 Bookmark API 접근에 실패한다")
-    void getBookmarks_Fail_WhenAuthorizationHeaderMissing() throws Exception {
-        when(bookmarkService.getBookmarks(null, "LATEST", null, "20"))
-                .thenThrow(new CustomException(ErrorCode.UNAUTHORIZED));
-
-        mockMvc.perform(get("/api/v1/bookmarks"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value("COMMON401"));
-
-        verify(bookmarkService).getBookmarks(null, "LATEST", null, "20");
-    }
-
-    @Test
-    @DisplayName("Authorization 헤더를 전달해 사용자의 북마크 목록을 조회한다")
-    void getBookmarks_Success_WithAuthorizationHeader() throws Exception {
+    @DisplayName("인증된 사용자의 ID로 북마크 목록을 조회한다")
+    void getBookmarks_Success_WithAuthenticatedUser() throws Exception {
         BookmarkResDTO.BookmarkListDTO response = BookmarkResDTO.BookmarkListDTO.builder()
                 .bookmarks(List.of())
                 .page(SupportResDTO.PageDTO.builder()
@@ -66,16 +51,15 @@ class BookmarkControllerTest {
                         .build())
                 .build();
         when(bookmarkService.getBookmarks(
-                "Bearer access-token", "LATEST", null, "20"))
+                USER_ID, "LATEST", null, "20"))
                 .thenReturn(response);
 
-        mockMvc.perform(get("/api/v1/bookmarks")
-                        .header(HttpHeaders.AUTHORIZATION, "Bearer access-token"))
+        mockMvc.perform(get("/api/v1/bookmarks"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.bookmarks").isEmpty());
 
         verify(bookmarkService).getBookmarks(
-                "Bearer access-token", "LATEST", null, "20");
+                USER_ID, "LATEST", null, "20");
     }
 }
