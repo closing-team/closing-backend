@@ -4,6 +4,7 @@ import com.closing.closing.domain.support.dto.SupportResDTO;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
+import com.closing.closing.domain.support.enums.SupportSort;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -167,20 +168,6 @@ public class SupportService {
                     : supportInfo.getApplyEndDate()).toString();
         };
         return sortCursor + "_" + supportInfo.getId();
-    }
-
-    private enum SupportSort {
-        POPULAR,
-        LATEST,
-        DEADLINE;
-
-        private static SupportSort from(String value) {
-            try {
-                return SupportSort.valueOf(value);
-            } catch (IllegalArgumentException | NullPointerException exception) {
-                throw new CustomException(ErrorCode.SUPPORT_INVALID_QUERY);
-            }
-        }
     }
 
     private record SupportCursor(

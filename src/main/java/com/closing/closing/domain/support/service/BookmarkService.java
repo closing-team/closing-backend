@@ -6,6 +6,7 @@ import com.closing.closing.domain.support.entity.Bookmark;
 import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
+import com.closing.closing.domain.support.enums.BookmarkSort;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
@@ -188,20 +189,6 @@ public class BookmarkService {
                     : bookmark.getSupportInfo().getApplyEndDate())
                     + "_" + bookmark.getId();
         };
-    }
-
-    private enum BookmarkSort {
-        POPULAR,
-        LATEST,
-        DEADLINE;
-
-        private static BookmarkSort from(String value) {
-            try {
-                return BookmarkSort.valueOf(value);
-            } catch (IllegalArgumentException | NullPointerException exception) {
-                throw new CustomException(ErrorCode.BOOKMARK_INVALID_QUERY);
-            }
-        }
     }
 
     private record BookmarkCursor(

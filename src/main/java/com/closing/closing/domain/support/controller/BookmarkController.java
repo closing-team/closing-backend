@@ -3,8 +3,11 @@ package com.closing.closing.domain.support.controller;
 import com.closing.closing.domain.support.dto.BookmarkReqDTO;
 import com.closing.closing.domain.support.dto.BookmarkResDTO;
 import com.closing.closing.domain.support.service.BookmarkService;
+import com.closing.closing.domain.support.enums.BookmarkSort;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +55,11 @@ public class BookmarkController {
     @GetMapping
     public ApiResponse<BookmarkResDTO.BookmarkListDTO> getBookmarks(
             @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "북마크 정렬 기준",
+                    schema = @Schema(
+                            implementation = BookmarkSort.class,
+                            defaultValue = "LATEST"))
             @RequestParam(value = "sort", defaultValue = "LATEST") String sort,
             @RequestParam(value = "cursor", required = false) String cursor,
             @RequestParam(value = "size", defaultValue = "20") String size
