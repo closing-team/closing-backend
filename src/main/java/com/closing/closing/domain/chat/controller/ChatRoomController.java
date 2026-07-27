@@ -17,16 +17,19 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "ChatRoom", description = "중고거래 채팅방 및 메시지 API")
 @RestController
 @RequestMapping("/api/v1/chat-rooms")
@@ -52,6 +55,7 @@ public class ChatRoomController {
     })
     @PostMapping("/{productId}")
     public ApiResponse<ChatRoomCreateResponse> createChatRoom(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "문의할 상품 ID",
                     example = "15",
@@ -59,9 +63,6 @@ public class ChatRoomController {
             )
             @PathVariable("productId") Long productId
     ) {
-
-        // TODO: 인증 연결 이후 인증 객체에서 추출
-        Long userId = 1L;
 
         ChatRoomCreateResponse response = chatRoomService.createChatRoom(userId, productId);
 
@@ -106,6 +107,7 @@ public class ChatRoomController {
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ApiResponse<MessageSendResponse> sendMessages(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "메시지를 전송할 채팅방 ID",
                     example = "12",
@@ -139,9 +141,6 @@ public class ChatRoomController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
-        // TODO: 인증
-        Long userId = 1L;
-
         MessageSendResponse response = chatMessageService.sendMessage(
                 userId,
                 chatRoomId,
@@ -165,6 +164,7 @@ public class ChatRoomController {
     })
     @PatchMapping("/{chatRoomId}/read")
     public ApiResponse<Void> readMessages(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "메시지를 읽음 처리할 채팅방 ID",
                     example = "12",
@@ -172,8 +172,6 @@ public class ChatRoomController {
             )
             @PathVariable("chatRoomId") Long chatRoomId
     ) {
-        // TODO: 인증
-        Long userId = 1L;
 
         chatMessageService.readMessage(userId, chatRoomId);
 
@@ -193,6 +191,7 @@ public class ChatRoomController {
     })
     @GetMapping("/{chatRoomId}/messages")
     public ApiResponse<MessageHistoryListResponse<Long>> getMessages(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "메시지 히스토리를 조회할 채팅방 ID",
                     example = "12",
@@ -202,7 +201,6 @@ public class ChatRoomController {
             @ParameterObject
             @Valid @ModelAttribute MessageHistoryRequest request
     ) {
-        Long userId = 1L;
 
         MessageHistoryListResponse<Long> response =
                 chatMessageService.getMessageHistoryList(request, chatRoomId, userId);
@@ -223,10 +221,10 @@ public class ChatRoomController {
     })
     @GetMapping
     public ApiResponse<ChatRoomListResponse<String>> getChatRooms(
+            @AuthenticationPrincipal Long userId,
             @ParameterObject
             @Valid @ModelAttribute ChatRoomListRequest request
     ) {
-        Long userId = 1L;
 
         ChatRoomListResponse<String> response =
                 chatRoomService.getChatRooms(userId, request);

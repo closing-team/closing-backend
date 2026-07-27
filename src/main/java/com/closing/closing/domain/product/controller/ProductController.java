@@ -12,16 +12,19 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Product", description = "중고거래 상품 API")
 @RestController
 @RequestMapping("/api/v1/products")
@@ -45,12 +48,10 @@ public class ProductController {
     })
     @GetMapping
     public ApiResponse<ProductListResponse<ProductSummaryResponse, String>> getProducts(
+            @AuthenticationPrincipal Long userId,
             @ParameterObject
             @Valid @ModelAttribute ProductListRequest request
     ) {
-        // TODO: 인증 연결 후 인증 객체에서 추출
-        Long userId = 1L;
-
         ProductListResponse<ProductSummaryResponse, String> response =
                 productService.getProducts(userId, request);
 
@@ -89,6 +90,7 @@ public class ProductController {
     })
     @GetMapping("/{productId}")
     public ApiResponse<ProductResponse> getProduct(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "조회할 상품 ID",
                     example = "15",
@@ -98,11 +100,6 @@ public class ProductController {
             @ParameterObject
             @Valid @ModelAttribute ProductRequest request
     ) {
-        // TODO: userId 하드코딩 X
-        // 인증 연결 이전이므로 임시 userId 설정
-        // 인증 연결 이후엔 Token으로 user 판별
-        Long userId = 1L;
-
         ProductResponse response = productService.getProduct(productId, userId, request);
 
         return ApiResponse.onSuccess(response);
@@ -122,6 +119,7 @@ public class ProductController {
     })
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProductCreateResponse> createProduct(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = """
                             상품 등록 정보 JSON입니다. Content-Type은 application/json입니다.<br><br>
@@ -156,8 +154,6 @@ public class ProductController {
             )
             @RequestPart("images") List<MultipartFile> images
     ) {
-        // TODO: 인증 연결 후 인증 객체에서 추출
-        Long userId = 1L;
 
         List<String> imageUrls = productImageService.upload(images);
 
@@ -180,6 +176,7 @@ public class ProductController {
     })
     @DeleteMapping("/{productId}")
     public ApiResponse<Void> deleteProduct(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "삭제할 상품 ID",
                     example = "15",
@@ -187,8 +184,6 @@ public class ProductController {
             )
             @PathVariable Long productId
     ) {
-        // TODO: 인증 연결 후 인증 객체에서 추출
-        Long userId = 1L;
 
         productService.deleteProduct(productId, userId);
 
@@ -209,6 +204,7 @@ public class ProductController {
     })
     @PatchMapping("/{productId}/status")
     public ApiResponse<ProductStatusResponse> updateProductStatus(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "상태 수정할 상품 ID",
                     example = "15",
@@ -217,8 +213,6 @@ public class ProductController {
             @PathVariable("productId") Long productId,
             @Valid @RequestBody ProductStatusRequest request
     ) {
-        // TODO: 인증 연결 후 인증 객체에서 추출
-        Long userId = 1L;
 
         ProductStatusResponse response = productService.updateProductStatus(userId, productId, request.getStatus());
 
@@ -239,6 +233,7 @@ public class ProductController {
     })
     @PostMapping("/{productId}/bookmark")
     public ApiResponse<ProductBookmarkResponse> createBookmark(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "북마크 추가할 상품 ID",
                     example = "15",
@@ -246,8 +241,6 @@ public class ProductController {
             )
             @PathVariable("productId") Long productId
     ) {
-        // TODO: 인증 연결 후 인증 객체에서 추출
-        Long userId = 1L;
 
         ProductBookmarkResponse response = productService.createProductBookmark(userId, productId);
 
@@ -268,6 +261,7 @@ public class ProductController {
     })
     @DeleteMapping("/{productId}/bookmark")
     public ApiResponse<ProductBookmarkResponse> deleteBookmark(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "북마크 삭제할 상품 ID",
                     example = "15",
@@ -275,8 +269,6 @@ public class ProductController {
             )
             @PathVariable("productId") Long productId
     ) {
-        // TODO: 인증 객체에서 추출
-        Long userId = 1L;
 
         ProductBookmarkResponse response = productService.deleteProductBookmark(userId, productId);
 
@@ -297,11 +289,10 @@ public class ProductController {
     })
     @GetMapping("/me")
     public ApiResponse<MyProductListResponse> getMyProducts(
+            @AuthenticationPrincipal Long userId,
             @ParameterObject
             @Valid @ModelAttribute MyProductListRequest request
     ) {
-        // TODO: 인증
-        Long userId = 1L;
         MyProductListResponse response =
                 productService.getMyProducts(userId, request);
 
@@ -322,11 +313,10 @@ public class ProductController {
     })
     @GetMapping("/bookmarks")
     public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
+            @AuthenticationPrincipal Long userId,
             @ParameterObject
             @Valid @ModelAttribute ProductBookmarkListRequest request
     ) {
-        // TODO: 인증
-        Long userId = 1L;
         ProductListResponse<ProductSummaryResponse, Long> response =
                 productService.getBookmarkedProducts(userId, request);
 
@@ -348,6 +338,7 @@ public class ProductController {
     @PutMapping(value = "/{productId}",
     consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<ProductUpdateResponse> updateProduct(
+            @AuthenticationPrincipal Long userId,
             @Parameter(
                     description = "수정할 상품 ID",
                     example = "15",
@@ -390,7 +381,6 @@ public class ProductController {
             )
             @RequestPart(value = "newImages", required = false) List<MultipartFile> newImages
     ) {
-        Long userId = 1L;
         ProductUpdateResponse response =
                 productService.updateProduct(userId, productId, request, newImages);
 

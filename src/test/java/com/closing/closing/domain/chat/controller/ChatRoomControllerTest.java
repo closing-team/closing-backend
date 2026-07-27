@@ -8,12 +8,16 @@ import com.closing.closing.domain.chat.service.ChatMessageService;
 import com.closing.closing.domain.chat.service.ChatRoomService;
 import com.closing.closing.domain.product.dto.response.CursorPageResponse;
 import com.closing.closing.global.exception.GlobalExceptionHandler;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -32,6 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class ChatRoomControllerTest {
 
+    private static final Long AUTHENTICATED_USER_ID = 42L;
+
     @Mock
     private ChatRoomService chatRoomService;
 
@@ -42,11 +48,25 @@ class ChatRoomControllerTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        AUTHENTICATED_USER_ID,
+                        null,
+                        List.of()
+                )
+        );
+
         ChatRoomController controller =
                 new ChatRoomController(chatRoomService, chatMessageService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -57,7 +77,7 @@ class ChatRoomControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        verify(chatMessageService).readMessage(1L, 10L);
+        verify(chatMessageService).readMessage(AUTHENTICATED_USER_ID, 10L);
     }
 
     @Test
@@ -70,7 +90,7 @@ class ChatRoomControllerTest {
                         CursorPageResponse.of(20L, true)
                 );
         given(chatMessageService.getMessageHistoryList(
-                any(MessageHistoryRequest.class), eq(10L), eq(1L)
+                any(MessageHistoryRequest.class), eq(10L), eq(AUTHENTICATED_USER_ID)
         )).willReturn(response);
 
         mockMvc.perform(get("/api/v1/chat-rooms/10/messages")
@@ -85,7 +105,7 @@ class ChatRoomControllerTest {
                 argThat(request -> request.getCursor().equals(40L)
                         && request.getSize() == 20),
                 eq(10L),
-                eq(1L)
+                eq(AUTHENTICATED_USER_ID)
         );
     }
 
@@ -99,7 +119,10 @@ class ChatRoomControllerTest {
                         List.of(),
                         CursorPageResponse.of(null, false)
                 );
-        given(chatRoomService.getChatRooms(eq(1L), any(ChatRoomListRequest.class)))
+        given(chatRoomService.getChatRooms(
+                eq(AUTHENTICATED_USER_ID),
+                any(ChatRoomListRequest.class)
+        ))
                 .willReturn(response);
 
         mockMvc.perform(get("/api/v1/chat-rooms")
@@ -110,7 +133,7 @@ class ChatRoomControllerTest {
                 .andExpect(jsonPath("$.data.page.hasNext").value(false));
 
         verify(chatRoomService).getChatRooms(
-                eq(1L),
+                eq(AUTHENTICATED_USER_ID),
                 argThat(request -> cursor.equals(request.getCursor())
                         && request.getSize() == 20)
         );
