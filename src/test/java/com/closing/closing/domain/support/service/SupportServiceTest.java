@@ -170,7 +170,7 @@ class SupportServiceTest {
     }
 
     @Test
-    @DisplayName("지원하지 않는 정렬값이면 COMMON400 예외 발생")
+    @DisplayName("지원하지 않는 정렬값이면 SUPPORT400 예외 발생")
     void getSupports_Fail_WhenSortIsInvalid() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -180,10 +180,11 @@ class SupportServiceTest {
         assertEquals(
                 ErrorCode.SUPPORT_INVALID_QUERY,
                 exception.getErrorCode());
+        assertEquals("SUPPORT400", exception.getErrorCode().getCode());
     }
 
     @Test
-    @DisplayName("커서 형식이 잘못되면 COMMON400 예외 발생")
+    @DisplayName("커서 형식이 잘못되면 SUPPORT400 예외 발생")
     void getSupports_Fail_WhenCursorIsInvalid() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -196,7 +197,7 @@ class SupportServiceTest {
     }
 
     @Test
-    @DisplayName("페이지 크기가 허용 범위를 벗어나면 COMMON400 예외 발생")
+    @DisplayName("페이지 크기가 허용 범위를 벗어나면 SUPPORT400 예외 발생")
     void getSupports_Fail_WhenSizeIsOutOfRange() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,

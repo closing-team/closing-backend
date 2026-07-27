@@ -94,7 +94,7 @@ class BookmarkServiceTest {
     }
 
     @Test
-    @DisplayName("북마크 추가 시 지원정보 ID가 null이면 COMMON400 예외 발생")
+    @DisplayName("북마크 추가 시 지원정보 ID가 null이면 BOOKMARK400 예외 발생")
     void createBookmark_Fail_WhenSupportIdIsNull() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -103,11 +103,12 @@ class BookmarkServiceTest {
         assertEquals(
                 ErrorCode.BOOKMARK_INVALID_QUERY,
                 exception.getErrorCode());
+        assertEquals("BOOKMARK400", exception.getErrorCode().getCode());
         verify(supportRepository, never()).findById(any());
     }
 
     @Test
-    @DisplayName("북마크 추가 시 지원정보 ID가 양수가 아니면 COMMON400 예외 발생")
+    @DisplayName("북마크 추가 시 지원정보 ID가 양수가 아니면 BOOKMARK400 예외 발생")
     void createBookmark_Fail_WhenSupportIdIsNotPositive() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -359,7 +360,7 @@ class BookmarkServiceTest {
     }
 
     @Test
-    @DisplayName("지원하지 않는 북마크 정렬값이면 COMMON400 예외 발생")
+    @DisplayName("지원하지 않는 북마크 정렬값이면 BOOKMARK400 예외 발생")
     void getBookmarks_Fail_WhenSortIsInvalid() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -372,7 +373,7 @@ class BookmarkServiceTest {
     }
 
     @Test
-    @DisplayName("북마크 커서 형식이 잘못되면 COMMON400 예외 발생")
+    @DisplayName("북마크 커서 형식이 잘못되면 BOOKMARK400 예외 발생")
     void getBookmarks_Fail_WhenCursorIsInvalid() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -385,7 +386,7 @@ class BookmarkServiceTest {
     }
 
     @Test
-    @DisplayName("북마크 페이지 크기가 허용 범위를 벗어나면 COMMON400 예외 발생")
+    @DisplayName("북마크 페이지 크기가 허용 범위를 벗어나면 BOOKMARK400 예외 발생")
     void getBookmarks_Fail_WhenSizeIsOutOfRange() {
         // when & then
         CustomException exception = assertThrows(CustomException.class,
