@@ -12,4 +12,9 @@ public record AiConfirmedTaskDto(
         @Schema(description = "일정 시작 시각", example = "10:00:00") LocalTime startTime,
         @Schema(description = "일정 종료 날짜", example = "2026-08-20") LocalDate endDate,
         @Schema(description = "일정 종료 시각", example = "22:00:00") LocalTime endTime,
-        @Schema(description = "일정 설명", example = "관할 세무서 방문 필요") String description) {}
+        @Schema(description = "일정 설명", example = "관할 세무서 방문 필요") String description,
+        @Schema(
+                        description = "일정 출처",
+                        example = "AI_GENERATED",
+                        allowableValues = {"AI_GENERATED", "MANUAL"})
+                String source) {}

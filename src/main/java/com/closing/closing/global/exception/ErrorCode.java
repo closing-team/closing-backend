@@ -85,7 +85,8 @@ public enum ErrorCode {
     AI_TEMP_TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "AI_TEMP_TASK404", "존재하지 않는 임시 일정입니다."),
     AI_EMPTY_TASK_TITLE(HttpStatus.BAD_REQUEST, "AI_TASK_TITLE400", "일정 제목이 비어있습니다."),
     AI_SESSION_ACCESS_FORBIDDEN(
-            HttpStatus.FORBIDDEN, "AI_SESSION_ACCESS_FORBIDDEN", "본인의 세션만 접근할 수 있습니다.");
+            HttpStatus.FORBIDDEN, "AI_SESSION_ACCESS_FORBIDDEN", "본인의 세션만 접근할 수 있습니다."),
+    AI_NO_TASKS_TO_CONFIRM(HttpStatus.CONFLICT, "AI_NO_TASKS409", "확정할 일정이 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
