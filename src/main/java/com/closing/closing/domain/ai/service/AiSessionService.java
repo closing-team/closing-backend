@@ -18,6 +18,10 @@ import com.closing.closing.domain.ai.dto.response.AiSessionResponseDto;
 import com.closing.closing.domain.ai.entity.AiSession;
 import com.closing.closing.domain.ai.entity.AiSessionStatus;
 import com.closing.closing.domain.ai.repository.AiSessionRepository;
+import com.closing.closing.domain.business.entity.BusinessRegistration;
+import com.closing.closing.domain.task.entity.Task;
+import com.closing.closing.domain.task.entity.TaskSource;
+import com.closing.closing.domain.task.repository.TaskRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.closing.closing.global.jwt.JwtProvider;
@@ -26,13 +30,17 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -48,6 +56,7 @@ public class AiSessionService {
 
     private final WebClient aiWebClient;
     private final AiSessionRepository aiSessionRepository;
+    private final TaskRepository taskRepository;
     private final ObjectMapper objectMapper;
     private final JwtProvider jwtProvider;
 
@@ -158,12 +167,17 @@ public class AiSessionService {
                 aiSession.getSessionId(), aiSession.getStatus().name(), generatedTasks);
     }
 
-    // tasks 도메인 미확정 - 확정 후 재검증 필요
     private AiSessionConfirmedResponseDto toConfirmedResponse(AiSession aiSession) {
         List<Long> confirmedTaskIds = parseConfirmedTaskIds(aiSession.getConfirmedTaskIds());
+        Map<Long, Task> tasksById =
+                taskRepository.findAllById(confirmedTaskIds).stream()
+                        .collect(Collectors.toMap(Task::getId, Function.identity()));
+
+        // 순서 유지를 위해 confirmedTaskIds 순서대로 매핑 (findAllById는 순서를 보장하지 않음)
         List<AiConfirmedTaskDto> confirmedTasks =
                 confirmedTaskIds.stream()
-                        .map(taskId -> new AiConfirmedTaskDto(taskId, null, null, null, null, null, null))
+                        .map(tasksById::get)
+                        .map(this::toConfirmedTaskDto)
                         .toList();
         return new AiSessionConfirmedResponseDto(
                 aiSession.getSessionId(), aiSession.getStatus().name(), confirmedTasks);
@@ -363,6 +377,87 @@ public class AiSessionService {
         saveSession(updatedSession);
     }
 
+    @Transactional
+    public AiSessionConfirmedResponseDto confirmSession(
+            String authorizationHeader, String sessionId) {
+        Long userId = extractUserId(authorizationHeader);
+
+        AiSession aiSession =
+                aiSessionRepository
+                        .findBySessionId(sessionId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.AI_SESSION_NOT_FOUND));
+        validateOwner(aiSession, userId);
+
+        // 이미 확정된 세션은 다시 확정할 수 없음
+        if (aiSession.getStatus() == AiSessionStatus.ALREADY_CONFIRMED) {
+            throw new CustomException(ErrorCode.AI_SESSION_ALREADY_CONFIRMED);
+        }
+        // 아직 일정이 생성되지 않아 확정할 대상이 없음
+        if (aiSession.getStatus() == AiSessionStatus.NEW) {
+            throw new CustomException(ErrorCode.AI_NO_TASKS_TO_CONFIRM);
+        }
+
+        List<AiGeneratedTaskDto> generatedTasks =
+                deserialize(aiSession.getGeneratedTasks(), new TypeReference<>() {});
+        if (generatedTasks.isEmpty()) {
+            throw new CustomException(ErrorCode.AI_NO_TASKS_TO_CONFIRM);
+        }
+
+        BusinessRegistration registration =
+                taskRepository
+                        .findBusinessRegistrationByUserId(userId)
+                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        List<Task> tasks =
+                generatedTasks.stream().map(task -> toTaskEntity(task, registration)).toList();
+        List<Task> savedTasks = taskRepository.saveAll(tasks);
+
+        List<Long> confirmedTaskIds = savedTasks.stream().map(Task::getId).toList();
+
+        AiSession updatedSession =
+                AiSession.builder()
+                        .sessionId(aiSession.getSessionId())
+                        .userId(aiSession.getUserId())
+                        .status(AiSessionStatus.ALREADY_CONFIRMED)
+                        .messages(aiSession.getMessages())
+                        .turnCount(aiSession.getTurnCount())
+                        .confirmedTaskIds(serialize(confirmedTaskIds))
+                        .version(aiSession.getVersion())
+                        .build();
+        saveSession(updatedSession);
+
+        List<AiConfirmedTaskDto> confirmedTasks =
+                savedTasks.stream().map(this::toConfirmedTaskDto).toList();
+
+        return new AiSessionConfirmedResponseDto(
+                sessionId, AiSessionStatus.ALREADY_CONFIRMED.name(), confirmedTasks);
+    }
+
+    private Task toTaskEntity(AiGeneratedTaskDto task, BusinessRegistration registration) {
+        return Task.builder()
+                .registration(registration)
+                .title(task.title())
+                .startDate(task.startDate())
+                .endDate(task.endDate())
+                .startTime(task.startTime())
+                .endTime(task.endTime())
+                .source(TaskSource.AI_GENERATED)
+                .description(task.memo())
+                .build();
+    }
+
+    private AiConfirmedTaskDto toConfirmedTaskDto(Task task) {
+        return new AiConfirmedTaskDto(
+                task.getId(),
+                task.getTitle(),
+                task.getStartDate(),
+                task.getStartTime(),
+                task.getEndDate(),
+                task.getEndTime(),
+                task.getDescription(),
+                task.getSource().name());
+    }
+
     private void validateTaskTitle(String title) {
         // 빈 제목은 저장 전에 차단
         if (title == null || title.isBlank()) {
@@ -371,7 +466,8 @@ public class AiSessionService {
     }
 
     private List<Long> parseConfirmedTaskIds(String confirmedTaskIdsJson) {
-        // confirm API가 아직 없어 null일 수 있음
+        // 방어적 처리: 정상 흐름에서는 confirmSession()이 항상 값을 채우고 나서
+        // status를 ALREADY_CONFIRMED로 바꾸므로 null이 될 일이 없음
         if (confirmedTaskIdsJson == null) {
             return List.of();
         }
