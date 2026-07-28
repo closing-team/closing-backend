@@ -8,6 +8,7 @@ import com.closing.closing.domain.product.service.ProductImageService;
 import com.closing.closing.domain.product.service.ProductService;
 import com.closing.closing.global.exception.GlobalExceptionHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -32,6 +36,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ExtendWith(MockitoExtension.class)
 class ProductControllerTest {
 
+    private static final Long AUTHENTICATED_USER_ID = 42L;
+
     @Mock
     private ProductService productService;
     @Mock
@@ -42,11 +48,25 @@ class ProductControllerTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(
+                        AUTHENTICATED_USER_ID,
+                        null,
+                        List.of()
+                )
+        );
+
         ProductController controller = new ProductController(productService, productImageService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         objectMapper = new ObjectMapper().findAndRegisterModules();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -55,7 +75,10 @@ class ProductControllerTest {
         // 상품 목록의 query string 바인딩과 공통 응답 형식을 검증한다.
         ProductListResponse<ProductSummaryResponse, String> response =
                 new ProductListResponse<>(List.of(), CursorPageResponse.of(null, false));
-        given(productService.getProducts(eq(1L), any(ProductListRequest.class)))
+        given(productService.getProducts(
+                eq(AUTHENTICATED_USER_ID),
+                any(ProductListRequest.class)
+        ))
                 .willReturn(response);
 
         mockMvc.perform(get("/api/v1/products")
@@ -69,7 +92,7 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.data.products").isArray())
                 .andExpect(jsonPath("$.data.page.hasNext").value(false));
 
-        verify(productService).getProducts(eq(1L), argThat(request ->
+        verify(productService).getProducts(eq(AUTHENTICATED_USER_ID), argThat(request ->
                 request.getSort() == SortMethod.LATEST
                         && request.getSize() == 20
                         && request.getLatitude().compareTo(new BigDecimal("37.5665")) == 0
@@ -83,10 +106,14 @@ class ProductControllerTest {
         ProductResponse response = new ProductResponse(
                 10L, "중고 의자", 100_000, "설명", List.of("one.jpg"),
                 null, null, null, null, List.of(), null, ProductStatus.SELLING,
-                false, true, new SellerResponse(1L, "판매자", null),
+                false, true, new SellerResponse(AUTHENTICATED_USER_ID, "판매자", null),
                 LocalDateTime.of(2026, 7, 21, 10, 0)
         );
-        given(productService.getProduct(eq(10L), eq(1L), any(ProductRequest.class)))
+        given(productService.getProduct(
+                eq(10L),
+                eq(AUTHENTICATED_USER_ID),
+                any(ProductRequest.class)
+        ))
                 .willReturn(response);
 
         mockMvc.perform(get("/api/v1/products/10")
@@ -122,7 +149,7 @@ class ProductControllerTest {
                 "images", "chair.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[]{1, 2, 3}
         );
         given(productImageService.upload(anyList())).willReturn(List.of("uploaded.jpg"));
-        given(productService.createProduct(eq(1L), any(ProductCreateRequest.class),
+        given(productService.createProduct(eq(AUTHENTICATED_USER_ID), any(ProductCreateRequest.class),
                 eq(List.of("uploaded.jpg"))))
                 .willReturn(new ProductCreateResponse(
                         10L, ProductStatus.SELLING, List.of("uploaded.jpg"),
@@ -149,14 +176,18 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").doesNotExist());
 
-        verify(productService).deleteProduct(10L, 1L);
+        verify(productService).deleteProduct(10L, AUTHENTICATED_USER_ID);
     }
 
     @Test
     @DisplayName("PATCH /api/v1/products/{id}/status 요청으로 거래 상태를 변경한다")
     void updateProductStatus_success() throws Exception {
         // 상태 변경 JSON body와 응답 상태값을 검증한다.
-        given(productService.updateProductStatus(1L, 10L, "SOLD_OUT"))
+        given(productService.updateProductStatus(
+                AUTHENTICATED_USER_ID,
+                10L,
+                "SOLD_OUT"
+        ))
                 .willReturn(new ProductStatusResponse(
                         10L, ProductStatus.SOLD_OUT, LocalDateTime.of(2026, 7, 21, 11, 0)
                 ));
@@ -173,9 +204,9 @@ class ProductControllerTest {
     @DisplayName("상품 찜 추가와 취소 API가 찜 상태를 반환한다")
     void bookmarkApis_success() throws Exception {
         // 찜 추가·취소 endpoint가 동일한 응답 구조를 사용하는지 검증한다.
-        given(productService.createProductBookmark(1L, 10L))
+        given(productService.createProductBookmark(AUTHENTICATED_USER_ID, 10L))
                 .willReturn(new ProductBookmarkResponse(10L, true));
-        given(productService.deleteProductBookmark(1L, 10L))
+        given(productService.deleteProductBookmark(AUTHENTICATED_USER_ID, 10L))
                 .willReturn(new ProductBookmarkResponse(10L, false));
 
         mockMvc.perform(post("/api/v1/products/10/bookmark"))
@@ -199,9 +230,15 @@ class ProductControllerTest {
                 );
         ProductListResponse<ProductSummaryResponse, Long> bookmarkResponse =
                 new ProductListResponse<>(List.of(), CursorPageResponse.of(30L, true));
-        given(productService.getMyProducts(eq(1L), any(MyProductListRequest.class)))
+        given(productService.getMyProducts(
+                eq(AUTHENTICATED_USER_ID),
+                any(MyProductListRequest.class)
+        ))
                 .willReturn(myProductResponse);
-        given(productService.getBookmarkedProducts(eq(1L), any(ProductBookmarkListRequest.class)))
+        given(productService.getBookmarkedProducts(
+                eq(AUTHENTICATED_USER_ID),
+                any(ProductBookmarkListRequest.class)
+        ))
                 .willReturn(bookmarkResponse);
 
         mockMvc.perform(get("/api/v1/products/me").param("size", "20"))
@@ -242,7 +279,7 @@ class ProductControllerTest {
         MockMultipartFile imagePart = new MockMultipartFile(
                 "newImages", "new.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[]{1}
         );
-        given(productService.updateProduct(eq(1L), eq(10L),
+        given(productService.updateProduct(eq(AUTHENTICATED_USER_ID), eq(10L),
                 any(ProductUpdateRequest.class), anyList()))
                 .willReturn(new ProductUpdateResponse(
                         10L, "수정된 의자", 120_000,
