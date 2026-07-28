@@ -4,6 +4,7 @@ import com.closing.closing.domain.ai.dto.request.AiSessionMessageRequestDto;
 import com.closing.closing.domain.ai.dto.request.AiSessionRequestDto;
 import com.closing.closing.domain.ai.dto.request.AiSessionTaskUpdateRequestDto;
 import com.closing.closing.domain.ai.dto.response.AiGeneratedTaskDto;
+import com.closing.closing.domain.ai.dto.response.AiSessionConfirmedResponseDto;
 import com.closing.closing.domain.ai.dto.response.AiSessionDetailResponseDto;
 import com.closing.closing.domain.ai.dto.response.AiSessionMessageResponseDto;
 import com.closing.closing.domain.ai.dto.response.AiSessionResponseDto;
@@ -510,5 +511,106 @@ public class AiSessionController {
                     String tempId) {
         aiSessionService.deleteTask(authorizationHeader, sessionId, tempId);
         return ApiResponse.onSuccess(null);
+    }
+
+    //세션 확정
+    @Operation(
+            summary = "AI 세션 확정 일정 캘린더 반영",
+            description = "생성된 임시 일정을 실제 캘린더(tasks)에 확정 반영합니다.")
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200", description = "AI 세션 확정 성공", useReturnTypeSchema = true),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "401",
+                description = "인증 토큰이 없거나 만료됨",
+                content =
+                        @Content(
+                                mediaType = "application/json",
+                                schema = @Schema(implementation = ApiResponse.class),
+                                examples =
+                                        @ExampleObject(
+                                                name = "인증 실패",
+                                                value =
+                                                        """
+                                                        {
+                                                          "success": false,
+                                                          "code": "AI401",
+                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                        }
+                                                        """))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "403",
+                description = "본인의 세션이 아님",
+                content =
+                        @Content(
+                                mediaType = "application/json",
+                                schema = @Schema(implementation = ApiResponse.class),
+                                examples =
+                                        @ExampleObject(
+                                                name = "세션 접근 권한 없음",
+                                                value =
+                                                        """
+                                                        {
+                                                          "success": false,
+                                                          "code": "AI_SESSION_ACCESS_FORBIDDEN",
+                                                          "message": "본인의 세션만 접근할 수 있습니다."
+                                                        }
+                                                        """))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "세션을 찾을 수 없음",
+                content =
+                        @Content(
+                                mediaType = "application/json",
+                                schema = @Schema(implementation = ApiResponse.class),
+                                examples =
+                                        @ExampleObject(
+                                                name = "세션 없음",
+                                                value =
+                                                        """
+                                                        {
+                                                          "success": false,
+                                                          "code": "AI_SESSION404",
+                                                          "message": "존재하지 않는 세션입니다."
+                                                        }
+                                                        """))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "409",
+                description = "확정할 수 없는 세션",
+                content =
+                        @Content(
+                                mediaType = "application/json",
+                                schema = @Schema(implementation = ApiResponse.class),
+                                examples = {
+                                    @ExampleObject(
+                                            name = "이미 확정된 세션",
+                                            value =
+                                            """
+                                            {
+                                              "success": false,
+                                              "code": "AI_SESSION409",
+                                              "message": "이미 확정되어 더 이상 진행할 수 없는 세션입니다."
+                                            }
+                                            """),
+                                    @ExampleObject(
+                                            name = "확정할 일정 없음",
+                                            value =
+                                            """
+                                            {
+                                              "success": false,
+                                              "code": "AI_NO_TASKS409",
+                                              "message": "확정할 일정이 없습니다."
+                                            }
+                                            """)
+                                }))
+    })
+    @PostMapping("/{sessionId}/confirm")
+    public ApiResponse<AiSessionConfirmedResponseDto> confirmSession(
+            @Parameter(hidden = true)
+                    @RequestHeader(value = "Authorization", required = false)
+                    String authorizationHeader,
+            @Parameter(description = "확정할 세션 ID", required = true) @PathVariable String sessionId) {
+        return ApiResponse.onSuccess(
+                aiSessionService.confirmSession(authorizationHeader, sessionId));
     }
 }
