@@ -5,6 +5,7 @@ import com.closing.closing.domain.chat.dto.request.MessageHistoryRequest;
 import com.closing.closing.domain.chat.dto.response.ChatRoomListResponse;
 import com.closing.closing.domain.chat.dto.response.MessageHistoryListResponse;
 import com.closing.closing.domain.chat.service.ChatMessageService;
+import com.closing.closing.domain.chat.service.ChatRealtimePublisher;
 import com.closing.closing.domain.chat.service.ChatRoomService;
 import com.closing.closing.domain.product.dto.response.CursorPageResponse;
 import com.closing.closing.global.exception.GlobalExceptionHandler;
@@ -44,6 +45,9 @@ class ChatRoomControllerTest {
     @Mock
     private ChatMessageService chatMessageService;
 
+    @Mock
+    private ChatRealtimePublisher chatRealtimePublisher;
+
     private MockMvc mockMvc;
 
     @BeforeEach
@@ -57,7 +61,11 @@ class ChatRoomControllerTest {
         );
 
         ChatRoomController controller =
-                new ChatRoomController(chatRoomService, chatMessageService);
+                new ChatRoomController(
+                        chatRoomService,
+                        chatMessageService,
+                        chatRealtimePublisher
+                );
         mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
                 .setControllerAdvice(new GlobalExceptionHandler())
