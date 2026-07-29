@@ -71,7 +71,6 @@ public enum ErrorCode {
             "기업마당 API 호출에 실패했습니다."),
 
     // AI세션 에러코드
-    AI_UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "AI401", "인증 토큰이 없거나 만료되었습니다."),
     AI_EMPTY_INITIAL_INPUT(HttpStatus.BAD_REQUEST, "AI_INITIAL_INPUT400", "초기 상황 입력 내용이 없습니다."),
     AI_LLM_GENERATION_FAILED(HttpStatus.FAILED_DEPENDENCY, "AI424", "일정 생성에 실패했습니다."),
     AI_LLM_TIMEOUT(HttpStatus.GATEWAY_TIMEOUT, "AI504", "AI 응답 시간이 초과되었습니다."),

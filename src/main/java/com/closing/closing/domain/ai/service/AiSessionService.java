@@ -24,7 +24,6 @@ import com.closing.closing.domain.task.entity.TaskSource;
 import com.closing.closing.domain.task.repository.TaskRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,12 +58,8 @@ public class AiSessionService {
     private final AiSessionRepository aiSessionRepository;
     private final TaskRepository taskRepository;
     private final ObjectMapper objectMapper;
-    private final JwtProvider jwtProvider;
 
-    public AiSessionResponseDto createSession(
-            String authorizationHeader, AiSessionRequestDto request) {
-        Long userId = extractUserId(authorizationHeader);
-
+    public AiSessionResponseDto createSession(Long userId, AiSessionRequestDto request) {
         // 유저당 확정 세션은 하나만 허용 - 이미 있으면 새로 만들지 않고 기존 세션을 반환
         Optional<AiSession> existingConfirmedSession =
                 aiSessionRepository.findConfirmedByUserId(userId);
@@ -149,9 +144,7 @@ public class AiSessionService {
                 generatedTasks);
     }
 
-    public AiSessionDetailResponseDto getSession(String authorizationHeader, String sessionId) {
-        Long userId = extractUserId(authorizationHeader);
-
+    public AiSessionDetailResponseDto getSession(Long userId, String sessionId) {
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
@@ -199,9 +192,7 @@ public class AiSessionService {
                 aiSession.getSessionId(), aiSession.getStatus().name(), confirmedTasks);
     }
 
-    public AiSessionMessageResponseDto sendMessage(
-            String authorizationHeader, String sessionId, String message) {
-        Long userId = extractUserId(authorizationHeader);
+    public AiSessionMessageResponseDto sendMessage(Long userId, String sessionId, String message) {
         validateMessage(message);
 
         AiSession aiSession =
@@ -287,12 +278,7 @@ public class AiSessionService {
     }
 
     public AiGeneratedTaskDto updateTask(
-            String authorizationHeader,
-            String sessionId,
-            String tempId,
-            AiSessionTaskUpdateRequestDto request) {
-        Long userId = extractUserId(authorizationHeader);
-
+            Long userId, String sessionId, String tempId, AiSessionTaskUpdateRequestDto request) {
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
@@ -347,9 +333,7 @@ public class AiSessionService {
         return updatedTask;
     }
 
-    public void deleteTask(String authorizationHeader, String sessionId, String tempId) {
-        Long userId = extractUserId(authorizationHeader);
-
+    public void deleteTask(Long userId, String sessionId, String tempId) {
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
@@ -395,10 +379,7 @@ public class AiSessionService {
     }
 
     @Transactional
-    public AiSessionConfirmedResponseDto confirmSession(
-            String authorizationHeader, String sessionId) {
-        Long userId = extractUserId(authorizationHeader);
-
+    public AiSessionConfirmedResponseDto confirmSession(Long userId, String sessionId) {
         AiSession aiSession =
                 aiSessionRepository
                         .findBySessionId(sessionId)
@@ -568,29 +549,6 @@ public class AiSessionService {
         } catch (ObjectOptimisticLockingFailureException e) {
             throw new CustomException(ErrorCode.AI_SESSION_CONCURRENT_UPDATE);
         }
-    }
-
-    private Long extractUserId(String authorizationHeader) {
-        String token = extractToken(authorizationHeader);
-        Long userId;
-        try {
-            jwtProvider.validate(token);
-            userId = jwtProvider.getUserId(token);
-        } catch (Exception e) {
-            throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
-        }
-        // userId claim이 없는 토큰은 예외 없이 null을 반환하므로 별도로 차단
-        if (userId == null) {
-            throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
-        }
-        return userId;
-    }
-
-    private String extractToken(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new CustomException(ErrorCode.AI_UNAUTHORIZED);
-        }
-        return authorizationHeader.substring(7);
     }
 
     private void validateOwner(AiSession aiSession, Long userId) {
