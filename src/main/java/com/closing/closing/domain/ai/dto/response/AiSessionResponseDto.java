@@ -26,6 +26,13 @@ public record AiSessionResponseDto(
         int turnCount,
 
         @Schema(
+                description = "남은 질문 횟수. 세션이 아직 진행 중(NEW)인 경우에만 값이 있고, "
+                        + "그 외 상태에서는 null입니다.",
+                example = "9",
+                types = {"integer", "null"})
+        Integer remainingTurns,
+
+        @Schema(
                 description = "AI가 생성한 임시 일정 목록. 아직 생성되지 않았다면 null입니다.",
                 types = {"array", "null"})
         List<AiGeneratedTaskDto> generatedTasks

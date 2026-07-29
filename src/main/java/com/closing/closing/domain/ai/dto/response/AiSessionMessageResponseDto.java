@@ -15,6 +15,13 @@ public record AiSessionMessageResponseDto(
         int turnCount,
 
         @Schema(
+                description = "남은 질문 횟수. 대화가 아직 진행 중(isFinal: false)인 경우에만 값이 있고, "
+                        + "일정 생성이 완료된 경우 null입니다.",
+                example = "8",
+                types = {"integer", "null"})
+        Integer remainingTurns,
+
+        @Schema(
                 description = "이번 응답으로 일정 생성이 완료되어 대화가 종료되었는지 여부",
                 example = "false")
         boolean isFinal,
