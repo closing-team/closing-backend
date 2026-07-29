@@ -5,6 +5,7 @@ import com.closing.closing.domain.chat.dto.request.MessageRequest;
 import com.closing.closing.domain.chat.dto.response.MessageHistoryListResponse;
 import com.closing.closing.domain.chat.dto.response.MessageResponse;
 import com.closing.closing.domain.chat.dto.response.MessageSendResponse;
+import com.closing.closing.domain.chat.dto.response.websocket.ChatMessageResult;
 import com.closing.closing.domain.chat.entity.ChatMessage;
 import com.closing.closing.domain.chat.entity.ChatRoom;
 import com.closing.closing.domain.chat.entity.MessageType;
@@ -41,7 +42,7 @@ public class ChatMessageService {
 
     // 메세지 보내기
     @Transactional
-    public MessageSendResponse sendMessage(
+    public ChatMessageResult sendMessage(
             Long userId,
             Long chatRoomId,
             MessageRequest request,
@@ -68,8 +69,7 @@ public class ChatMessageService {
             return sendImageMessage(
                     sender,
                     chatRoom,
-                    images,
-                    userId
+                    images
             );
         }
 
@@ -77,8 +77,7 @@ public class ChatMessageService {
         return sendTextMessage(
                 sender,
                 chatRoom,
-                request.getContent(),
-                userId
+                request.getContent()
         );
     }
 
@@ -156,11 +155,10 @@ public class ChatMessageService {
     }
 
     // 텍스트 메세지 보내기
-    private MessageSendResponse sendTextMessage(
+    private ChatMessageResult sendTextMessage(
             User sender,
             ChatRoom chatRoom,
-            String content,
-            Long userId
+            String content
     ) {
         ChatMessage chatMessage =
                 ChatMessage.builder()
@@ -172,18 +170,17 @@ public class ChatMessageService {
 
         ChatMessage savedMessage = chatMessageRepository.save(chatMessage);
 
-        return MessageSendResponse.from(
-                List.of(savedMessage),
-                userId
+        return ChatMessageResult.from(
+                chatRoom,
+                savedMessage
         );
     }
 
     // 이미지 메세지 보내기
-    private MessageSendResponse sendImageMessage(
+    private ChatMessageResult sendImageMessage(
             User sender,
             ChatRoom chatRoom,
-            List<MultipartFile> images,
-            Long userId
+            List<MultipartFile> images
     ) {
         List<String> uploadedImageUrls = new ArrayList<>();
 
@@ -216,9 +213,9 @@ public class ChatMessageService {
                     chatMessageRepository
                             .saveAllAndFlush(imageMessages);
 
-            return MessageSendResponse.from(
-                    savedMessages,
-                    userId
+            return ChatMessageResult.from(
+                    chatRoom,
+                    savedMessages
             );
         } catch (RuntimeException exception) {
             deleteUploadedImagesSafely(
@@ -312,6 +309,31 @@ public class ChatMessageService {
         return new MessageHistoryListResponse<>(
                 messageResponses,
                 pageResponse
+        );
+    }
+
+    @Transactional
+    public ChatMessageResult sendTextMessage(
+          Long userId,
+          Long chatRoomId,
+          String content
+    ) {
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new CustomException(ErrorCode.CHAT_ROOM_NOT_FOUND));
+        User sender = findSender(chatRoom, userId);
+
+        ChatMessage message = ChatMessage.builder()
+                .chatRoom(chatRoom)
+                .sender(sender)
+                .content(content)
+                .messageType(MessageType.TEXT)
+                .build();
+
+        ChatMessage savedMessage = chatMessageRepository.save(message);
+
+        return ChatMessageResult.from(
+                chatRoom,
+                savedMessage
         );
     }
 }

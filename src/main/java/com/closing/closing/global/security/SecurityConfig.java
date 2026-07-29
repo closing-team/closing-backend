@@ -41,6 +41,10 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/h2-console/**"
                         ).permitAll()
+                        .requestMatchers( // WebSocket handshake 허용
+                                "/ws-chat",
+                                "/ws-chat/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e

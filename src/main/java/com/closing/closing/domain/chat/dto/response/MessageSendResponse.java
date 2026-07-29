@@ -1,5 +1,6 @@
 package com.closing.closing.domain.chat.dto.response;
 
+import com.closing.closing.domain.chat.dto.response.websocket.ChatMessageEvent;
 import com.closing.closing.domain.chat.entity.ChatMessage;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
@@ -24,6 +25,23 @@ public class MessageSendResponse {
                         .map(chatMessage ->
                                 MessageResponse.from(
                                         chatMessage,
+                                        userId
+                                )
+                        )
+                        .toList();
+
+        return new MessageSendResponse(messages);
+    }
+
+    public static MessageSendResponse fromEvents(
+            List<ChatMessageEvent> events,
+            Long userId
+    ) {
+        List<MessageResponse> messages =
+                events.stream()
+                        .map(event ->
+                                MessageResponse.from(
+                                        event,
                                         userId
                                 )
                         )

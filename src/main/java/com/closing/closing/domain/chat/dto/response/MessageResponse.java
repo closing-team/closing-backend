@@ -1,5 +1,6 @@
 package com.closing.closing.domain.chat.dto.response;
 
+import com.closing.closing.domain.chat.dto.response.websocket.ChatMessageEvent;
 import com.closing.closing.domain.chat.entity.ChatMessage;
 import com.closing.closing.domain.chat.entity.MessageType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,6 +13,9 @@ import java.time.LocalDateTime;
 @Getter
 @RequiredArgsConstructor
 public class MessageResponse {
+
+    @Schema(description = "채팅방 ID", example = "12")
+    private final Long chatRoomId;
 
     @Schema(description = "메시지 ID", example = "105")
     private final Long messageId;
@@ -42,6 +46,7 @@ public class MessageResponse {
             Long userId
     ) {
         return new MessageResponse(
+                chatMessage.getChatRoom().getId(),
                 chatMessage.getId(),
                 chatMessage.getSender().getId(),
                 chatMessage.getMessageType(),
@@ -49,6 +54,22 @@ public class MessageResponse {
                 chatMessage.getSender().getId().equals(userId),
                 chatMessage.isRead(),
                 chatMessage.getCreatedAt()
+        );
+    }
+
+    public static MessageResponse from(
+            ChatMessageEvent event,
+            Long userId
+    ) {
+        return new MessageResponse(
+                event.chatRoomId(),
+                event.messageId(),
+                event.senderId(),
+                event.messageType(),
+                event.content(),
+                event.senderId().equals(userId),
+                event.read(),
+                event.createdAt()
         );
     }
 

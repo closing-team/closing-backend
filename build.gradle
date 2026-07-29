@@ -44,6 +44,9 @@ dependencies {
 	/* Flyway */
 	implementation 'org.flywaydb:flyway-core'
 	runtimeOnly 'org.flywaydb:flyway-database-postgresql'
+
+	/* WebSocket */
+	implementation 'org.springframework.boot:spring-boot-starter-websocket'
 }
 
 tasks.named('test') {

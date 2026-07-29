@@ -7,7 +7,9 @@ import com.closing.closing.domain.chat.dto.response.ChatRoomCreateResponse;
 import com.closing.closing.domain.chat.dto.response.ChatRoomListResponse;
 import com.closing.closing.domain.chat.dto.response.MessageHistoryListResponse;
 import com.closing.closing.domain.chat.dto.response.MessageSendResponse;
+import com.closing.closing.domain.chat.dto.response.websocket.ChatMessageResult;
 import com.closing.closing.domain.chat.service.ChatMessageService;
+import com.closing.closing.domain.chat.service.ChatRealtimePublisher;
 import com.closing.closing.domain.chat.service.ChatRoomService;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -38,6 +40,7 @@ public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
     private final ChatMessageService chatMessageService;
+    private final ChatRealtimePublisher chatRealtimePublisher;
 
     @Operation(
             summary = "채팅방 생성",
@@ -141,11 +144,18 @@ public class ChatRoomController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images
     ) {
 
-        MessageSendResponse response = chatMessageService.sendMessage(
+        ChatMessageResult result = chatMessageService.sendMessage(
                 userId,
                 chatRoomId,
                 request,
                 images
+        );
+
+        chatRealtimePublisher.publish(result);
+
+        MessageSendResponse response = MessageSendResponse.fromEvents(
+                result.events(),
+                userId
         );
 
         return ApiResponse.onSuccess(response);
