@@ -7,7 +7,9 @@ import com.closing.closing.domain.auth.dto.response.SignupResponse;
 import com.closing.closing.domain.auth.service.AuthService;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -27,17 +29,20 @@ public class AuthController {
     }
 
     @Operation(summary = "회원가입")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/signup")
     public ApiResponse<SignupResponse> signup(
-            @RequestHeader("Authorization") String authorizationHeader,
+            HttpServletRequest httpRequest,
             @Valid @RequestBody SignupRequest request) {
+        String authorizationHeader = httpRequest.getHeader("Authorization");
         return ApiResponse.onSuccess(authService.signup(authorizationHeader, request));
     }
 
     @Operation(summary = "로그아웃")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
-        authService.logout(authorizationHeader);
+    public ApiResponse<Void> logout(HttpServletRequest httpRequest) {
+        authService.logout(httpRequest.getHeader("Authorization"));
         return ApiResponse.onSuccess(null);
     }
 }

@@ -33,8 +33,6 @@ public class AuthService {
         Optional<User> existingUser = userRepository.findByKakaoId(userInfo.getKakaoId());
 
         if (existingUser.isEmpty()) {
-            // 신규 유저: 카카오 기본 정보로 DB에 먼저 저장 후 signupToken 발급
-            // 이름·전화번호·약관 동의는 이후 회원가입 플로우에서 업데이트
             User newUser = User.builder()
                     .kakaoId(userInfo.getKakaoId())
                     .nickname(userInfo.getNickname())
@@ -42,14 +40,15 @@ public class AuthService {
                     .profileImageUrl(userInfo.getProfileImageUrl())
                     .build();
             User savedUser = userRepository.save(newUser);
-            String signupToken = jwtProvider.createSignupToken(savedUser.getId());
-            return LoginResponse.ofNewUser(signupToken);
+            String accessToken = jwtProvider.createAccessToken(savedUser.getId());
+            String refreshToken = jwtProvider.createRefreshToken(savedUser.getId());
+            return LoginResponse.of(accessToken, refreshToken, true);
         }
 
         User user = existingUser.get();
         String accessToken = jwtProvider.createAccessToken(user.getId());
         String refreshToken = jwtProvider.createRefreshToken(user.getId());
-        return LoginResponse.ofExistingUser(accessToken, refreshToken);
+        return LoginResponse.of(accessToken, refreshToken, false);
     }
 
     @Transactional
@@ -58,16 +57,12 @@ public class AuthService {
         try {
             jwtProvider.validate(token);
         } catch (IllegalArgumentException e) {
-            throw new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND);
-        }
-
-        if (!jwtProvider.isSignupToken(token)) {
-            throw new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND);
+            throw new CustomException(ErrorCode.UNAUTHORIZED);
         }
 
         Long userId = jwtProvider.getUserId(token);
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         user.completeSignup(
                 request.getName(),
