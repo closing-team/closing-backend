@@ -19,6 +19,7 @@ springdoc:
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID:3d2955d69f70ccce2390d291d6e8202e}
+  client-secret: ${KAKAO_CLIENT_SECRET}
   token-uri: https://kauth.kakao.com/oauth/token
   user-info-uri: https://kapi.kakao.com/v2/user/me
   redirect-uri: ${KAKAO_REDIRECT_URI}
