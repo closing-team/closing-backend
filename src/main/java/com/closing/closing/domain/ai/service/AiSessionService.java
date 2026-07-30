@@ -53,6 +53,7 @@ public class AiSessionService {
     private static final String USER_ROLE = "user";
     private static final String AI_ROLE = "ai";
     private static final int INITIAL_TURN_COUNT = 1;
+    private static final int MAX_TURN_COUNT = 10;
 
     private final WebClient aiWebClient;
     private final AiSessionRepository aiSessionRepository;
@@ -92,6 +93,7 @@ public class AiSessionService {
                 AiSessionStatus.ALREADY_CONFIRMED.name(),
                 null,
                 aiSession.getTurnCount(),
+                null,
                 null);
     }
 
@@ -112,7 +114,12 @@ public class AiSessionService {
         saveSession(aiSession);
 
         return new AiSessionResponseDto(
-                sessionId, AiSessionStatus.NEW.name(), aiMessage, INITIAL_TURN_COUNT, null);
+                sessionId,
+                AiSessionStatus.NEW.name(),
+                aiMessage,
+                INITIAL_TURN_COUNT,
+                calculateRemainingTurns(INITIAL_TURN_COUNT),
+                null);
     }
 
     private AiSessionResponseDto saveGeneratedSession(
@@ -134,7 +141,12 @@ public class AiSessionService {
         saveSession(aiSession);
 
         return new AiSessionResponseDto(
-                sessionId, AiSessionStatus.GENERATED.name(), null, INITIAL_TURN_COUNT, generatedTasks);
+                sessionId,
+                AiSessionStatus.GENERATED.name(),
+                null,
+                INITIAL_TURN_COUNT,
+                null,
+                generatedTasks);
     }
 
     public AiSessionDetailResponseDto getSession(String authorizationHeader, String sessionId) {
@@ -157,7 +169,11 @@ public class AiSessionService {
     private AiSessionNewResponseDto toNewResponse(AiSession aiSession) {
         List<AiMessageDto> messages = deserialize(aiSession.getMessages(), new TypeReference<>() {});
         return new AiSessionNewResponseDto(
-                aiSession.getSessionId(), aiSession.getStatus().name(), aiSession.getTurnCount(), messages);
+                aiSession.getSessionId(),
+                aiSession.getStatus().name(),
+                aiSession.getTurnCount(),
+                calculateRemainingTurns(aiSession.getTurnCount()),
+                messages);
     }
 
     private AiSessionGeneratedResponseDto toGeneratedResponse(AiSession aiSession) {
@@ -243,7 +259,8 @@ public class AiSessionService {
                         .build();
         saveSession(updatedSession);
 
-        return new AiSessionMessageResponseDto(aiMessage, turnCount, false, null);
+        return new AiSessionMessageResponseDto(
+                aiMessage, turnCount, calculateRemainingTurns(turnCount), false, null);
     }
 
     private AiSessionMessageResponseDto saveGeneratedMessage(
@@ -266,7 +283,7 @@ public class AiSessionService {
                         .build();
         saveSession(updatedSession);
 
-        return new AiSessionMessageResponseDto(null, turnCount, true, generatedTasks);
+        return new AiSessionMessageResponseDto(null, turnCount, null, true, generatedTasks);
     }
 
     public AiGeneratedTaskDto updateTask(
@@ -463,6 +480,11 @@ public class AiSessionService {
         if (title == null || title.isBlank()) {
             throw new CustomException(ErrorCode.AI_EMPTY_TASK_TITLE);
         }
+    }
+
+    // 새로고침 시 프론트 자체 카운트가 어긋나지 않도록 남은 질문 횟수를 서버에서 계산해 내려줌
+    private int calculateRemainingTurns(int turnCount) {
+        return MAX_TURN_COUNT - turnCount;
     }
 
     private List<Long> parseConfirmedTaskIds(String confirmedTaskIdsJson) {
