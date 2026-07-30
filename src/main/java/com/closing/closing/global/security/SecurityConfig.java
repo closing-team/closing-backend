@@ -1,6 +1,5 @@
 package com.closing.closing.global.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -13,15 +12,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import java.util.Map;
-
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final ObjectMapper objectMapper;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -47,10 +43,9 @@ public class SecurityConfig {
                         .authenticationEntryPoint((request, response, ex) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType(MediaType.APPLICATION_JSON_VALUE + ";charset=UTF-8");
-                            response.getWriter().write(objectMapper.writeValueAsString(
-                                    Map.of("success", false, "code", "COMMON401",
-                                            "message", "인증이 필요합니다.", "data", null)
-                            ));
+                            response.getWriter().write(
+                                    "{\"success\":false,\"code\":\"COMMON401\",\"message\":\"인증이 필요합니다.\",\"data\":null}"
+                            );
                         })
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
