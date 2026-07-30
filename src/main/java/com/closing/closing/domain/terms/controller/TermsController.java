@@ -5,6 +5,7 @@ import com.closing.closing.domain.terms.dto.response.TermResponse;
 import com.closing.closing.domain.terms.service.TermsService;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,11 +28,10 @@ public class TermsController {
     }
 
     @Operation(summary = "약관 동의")
+    @SecurityRequirement(name = "bearerAuth")
     @PostMapping("/agree")
-    public ApiResponse<Void> agreeTerms(
-            @RequestHeader("Authorization") String authorizationHeader,
-            @Valid @RequestBody AgreeTermsRequest request) {
-        termsService.agreeTerms(authorizationHeader, request);
+    public ApiResponse<Void> agreeTerms(@Valid @RequestBody AgreeTermsRequest request) {
+        termsService.agreeTerms(request);
         return ApiResponse.onSuccess(null);
     }
 }

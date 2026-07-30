@@ -10,8 +10,9 @@ import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
-import com.closing.closing.global.jwt.JwtProvider;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +27,6 @@ public class TermsService {
     private final TermRepository termRepository;
     private final UserTermRepository userTermRepository;
     private final UserRepository userRepository;
-    private final JwtProvider jwtProvider;
 
     public List<TermResponse> getLatestTerms() {
         return termRepository.findLatestTerms().stream()
@@ -35,11 +35,12 @@ public class TermsService {
     }
 
     @Transactional
-    public void agreeTerms(String authorizationHeader, AgreeTermsRequest request) {
-        Long userId = extractUserIdFromSignupToken(authorizationHeader);
+    public void agreeTerms(AgreeTermsRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Long userId = (Long) auth.getPrincipal();
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         List<Term> latestTerms = termRepository.findLatestTerms();
         validateRequiredTerms(latestTerms, request.getTermIds());
@@ -50,22 +51,6 @@ public class TermsService {
                 .toList();
 
         userTermRepository.saveAll(userTerms);
-    }
-
-    private Long extractUserIdFromSignupToken(String authorizationHeader) {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
-            throw new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND);
-        }
-        String token = authorizationHeader.substring(7);
-        try {
-            jwtProvider.validate(token);
-        } catch (IllegalArgumentException e) {
-            throw new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND);
-        }
-        if (!jwtProvider.isSignupToken(token)) {
-            throw new CustomException(ErrorCode.AUTH_SIGNUP_TOKEN_NOT_FOUND);
-        }
-        return jwtProvider.getUserId(token);
     }
 
     private void validateRequiredTerms(List<Term> latestTerms, List<Long> agreedTermIds) {

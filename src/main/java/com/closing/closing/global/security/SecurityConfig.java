@@ -44,8 +44,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/kakao",
                                 "/api/v1/auth/signup",
-                                "/api/v1/terms",
-                                "/api/v1/terms/agree"
+                                "/api/v1/terms"
                         ).permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
