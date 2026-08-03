@@ -15,6 +15,7 @@ spring:
 
 kakao:
   client-id: test-kakao-client-id
+  client-secret: test-kakao-client-secret
   token-uri: http://localhost:9999/oauth/token
   user-info-uri: http://localhost:9999/user/me
   redirect-uri: http://localhost:3000/oauth/kakao
