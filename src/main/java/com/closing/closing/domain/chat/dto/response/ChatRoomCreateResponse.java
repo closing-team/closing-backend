@@ -1,14 +1,11 @@
 package com.closing.closing.domain.chat.dto.response;
 
 import com.closing.closing.domain.chat.entity.ChatRoom;
-import com.closing.closing.domain.product.entity.Product;
-import com.closing.closing.domain.user.entity.User;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Schema(description = "채팅방 생성 응답. 기존 채팅방이 있으면 해당 채팅방 정보를 반환합니다.")
 @Getter
@@ -29,35 +26,10 @@ public class ChatRoomCreateResponse {
 
     public static ChatRoomCreateResponse from(ChatRoom chatRoom) {
 
-        Product product = chatRoom.getProduct();
-        User seller = chatRoom.getSeller();
-
-        List<String> imageUrls = product.getImageUrls();
-
-        String thumbnailUrl = imageUrls == null || imageUrls.isEmpty()
-                ? null
-                : imageUrls.get(0);
-
-        ChatRoomProductResponse productResponse =
-                new ChatRoomProductResponse(
-                        product.getId(),
-                        product.getTitle(),
-                        thumbnailUrl,
-                        product.getPrice(),
-                        product.getStatus()
-                );
-
-        ChatRoomOtherMemberResponse otherMemberResponse =
-                new ChatRoomOtherMemberResponse(
-                        seller.getId(),
-                        seller.getNickname(),
-                        seller.getProfileImageUrl()
-                );
-
         return new ChatRoomCreateResponse(
                 chatRoom.getId(),
-                productResponse,
-                otherMemberResponse,
+                ChatRoomProductResponse.from(chatRoom.getProduct()),
+                ChatRoomOtherMemberResponse.from(chatRoom.getSeller()),
                 chatRoom.getCreatedAt()
         );
 
