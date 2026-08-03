@@ -29,24 +29,27 @@ public class ChatRoomProductResponse {
     @Schema(description = "상품 상태", example = "SELLING")
     private final ProductStatus status;
 
-    @Schema(description = "직거래 정보, 직거래 미지원시 null, 채팅방 응답에서는 distanceKm이 null입니다.",
-    nullable = true)
+    @Schema(
+            description = "직거래 정보. 직거래 미지원 시 null이며, 채팅방 응답에서는 distanceKm이 null입니다.",
+            nullable = true
+    )
     private final TradeLocationResponse tradeLocation;
 
     public static ChatRoomProductResponse from(Product product) {
 
         List<String> imageUrls = product.getImageUrls();
 
-        String thumbnailUrl= imageUrls == null || imageUrls.isEmpty()
+        String thumbnailUrl = imageUrls == null || imageUrls.isEmpty()
                 ? null
                 : imageUrls.get(0);
 
         TradeLocationResponse tradeLocation = product.isDirectAvailable()
                 ? TradeLocationResponse.of(
-                product.getTradeLocation(),
-                product.getLatitude(),
-                product.getLongitude(),
-                null)
+                        product.getTradeLocation(),
+                        product.getLatitude(),
+                        product.getLongitude(),
+                        null
+                )
                 : null;
 
         return new ChatRoomProductResponse(
