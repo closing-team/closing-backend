@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.List;
 
@@ -31,6 +32,12 @@ public class TaskService {
         if (request.title() == null || request.title().isBlank()) {
             throw new CustomException(ErrorCode.TASK_TITLE_BLANK);
         }
+
+        validateTaskPeriod(
+                request.startDate(),
+                request.endDate(),
+                request.startTime(),
+                request.endTime());
 
         BusinessRegistration registration = taskRepository.findBusinessRegistrationByUserId(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
@@ -59,6 +66,25 @@ public class TaskService {
     ) {
         Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
+
+        LocalDate updatedStartDate = request.startDate() != null
+                ? request.startDate()
+                : task.getStartDate();
+        LocalDate updatedEndDate = request.endDate() != null
+                ? request.endDate()
+                : task.getEndDate();
+        LocalTime updatedStartTime = request.startTime() != null
+                ? request.startTime()
+                : task.getStartTime();
+        LocalTime updatedEndTime = request.endTime() != null
+                ? request.endTime()
+                : task.getEndTime();
+
+        validateTaskPeriod(
+                updatedStartDate,
+                updatedEndDate,
+                updatedStartTime,
+                updatedEndTime);
 
         task.update(
                 request.title(),
@@ -127,5 +153,25 @@ public class TaskService {
                 .summary(summary)
                 .calendar(calendar)
                 .build();
+    }
+
+    private void validateTaskPeriod(
+            LocalDate startDate,
+            LocalDate endDate,
+            LocalTime startTime,
+            LocalTime endTime) {
+        if (startDate == null || endDate == null) {
+            return;
+        }
+
+        boolean isDateOrderInvalid = startDate.isAfter(endDate);
+        boolean isTimeOrderInvalid = startDate.isEqual(endDate)
+                && startTime != null
+                && endTime != null
+                && !startTime.isBefore(endTime);
+
+        if (isDateOrderInvalid || isTimeOrderInvalid) {
+            throw new CustomException(ErrorCode.TASK_INVALID_PERIOD);
+        }
     }
 }
