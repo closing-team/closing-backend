@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -127,6 +128,144 @@ class TaskServiceTest {
     }
 
     @Test
+    @DisplayName("시작일이 종료일보다 늦으면 일정 생성 실패")
+    void createTask_Fail_WhenStartDateIsAfterEndDate() {
+        // given
+        TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
+                "잘못된 기간의 일정",
+                LocalDate.of(2026, 7, 16),
+                LocalDate.of(2026, 7, 15),
+                null,
+                null,
+                null
+        );
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> taskService.createTask(USER_ID, request));
+
+        assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
+        verify(taskRepository, never()).findBusinessRegistrationByUserId(USER_ID);
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("같은 날짜에서 시작 시간이 종료 시간보다 늦으면 일정 생성 실패")
+    void createTask_Fail_WhenStartTimeIsAfterEndTimeOnSameDate() {
+        // given
+        TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
+                "잘못된 시간의 일정",
+                LocalDate.of(2026, 7, 15),
+                LocalDate.of(2026, 7, 15),
+                LocalTime.of(13, 0),
+                LocalTime.of(12, 0),
+                null
+        );
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> taskService.createTask(USER_ID, request));
+
+        assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
+        verify(taskRepository, never()).findBusinessRegistrationByUserId(USER_ID);
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("날짜가 다르면 종료 시간이 시작 시간보다 이르더라도 일정 생성 성공")
+    void createTask_Success_WhenEndTimeIsEarlierOnDifferentDate() throws Exception {
+        // given
+        TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
+                "여러 날짜에 걸친 일정",
+                LocalDate.of(2026, 7, 15),
+                LocalDate.of(2026, 7, 16),
+                LocalTime.of(20, 0),
+                LocalTime.of(9, 0),
+                null
+        );
+        Task savedTask = Task.builder()
+                .registration(businessRegistration)
+                .title(request.title())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .source(TaskSource.MANUAL)
+                .build();
+        setCreatedAt(savedTask, LocalDateTime.of(2026, 7, 15, 20, 0));
+
+        when(taskRepository.findBusinessRegistrationByUserId(USER_ID))
+                .thenReturn(Optional.of(businessRegistration));
+        when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
+
+        // when
+        TaskResDTO.CreateTaskResultDTO result = taskService.createTask(USER_ID, request);
+
+        // then
+        assertEquals(LocalDate.of(2026, 7, 16), result.endDate());
+        assertEquals(LocalTime.of(9, 0), result.endTime());
+        verify(taskRepository).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("같은 날짜에서 시작 시간과 종료 시간이 같으면 일정 생성 실패")
+    void createTask_Fail_WhenStartTimeEqualsEndTimeOnSameDate() {
+        // given
+        TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
+                "소요 시간이 없는 일정",
+                LocalDate.of(2026, 7, 15),
+                LocalDate.of(2026, 7, 15),
+                LocalTime.of(13, 0),
+                LocalTime.of(13, 0),
+                null
+        );
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> taskService.createTask(USER_ID, request));
+
+        assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
+        verify(taskRepository, never()).findBusinessRegistrationByUserId(USER_ID);
+        verify(taskRepository, never()).save(any(Task.class));
+    }
+
+    @Test
+    @DisplayName("종료 시간이 없으면 같은 날짜의 일정 생성 성공")
+    void createTask_Success_WhenEndTimeIsNull() throws Exception {
+        // given
+        TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
+                "종료 시간이 없는 일정",
+                LocalDate.of(2026, 7, 15),
+                LocalDate.of(2026, 7, 15),
+                LocalTime.of(13, 0),
+                null,
+                null
+        );
+        Task savedTask = Task.builder()
+                .registration(businessRegistration)
+                .title(request.title())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .startTime(request.startTime())
+                .endTime(request.endTime())
+                .source(TaskSource.MANUAL)
+                .build();
+        setCreatedAt(savedTask, LocalDateTime.of(2026, 7, 15, 13, 0));
+
+        when(taskRepository.findBusinessRegistrationByUserId(USER_ID))
+                .thenReturn(Optional.of(businessRegistration));
+        when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
+
+        // when
+        TaskResDTO.CreateTaskResultDTO result = taskService.createTask(USER_ID, request);
+
+        // then
+        assertEquals(LocalTime.of(13, 0), result.startTime());
+        assertNull(result.endTime());
+        verify(taskRepository).save(any(Task.class));
+    }
+
+    @Test
     @DisplayName("사용자의 사업자 등록 정보를 찾을 수 없으면 일정 생성 실패")
     void createTask_Fail_WhenBusinessRegistrationNotFound() {
         // given
@@ -207,6 +346,100 @@ class TaskServiceTest {
                 () -> taskService.updateTask(USER_ID, taskId, request));
 
         assertEquals(ErrorCode.TASK_NOT_FOUND, exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("종료일 부분 수정 후 시작일보다 빨라지면 일정 수정 실패")
+    void updateTask_Fail_WhenUpdatedEndDateIsBeforeExistingStartDate() {
+        // given
+        Long taskId = 1L;
+        Task existingTask = Task.builder()
+                .title("기존 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 17))
+                .source(TaskSource.MANUAL)
+                .build();
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                null,
+                null,
+                LocalDate.of(2026, 7, 14),
+                null,
+                null,
+                null
+        );
+        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+                .thenReturn(Optional.of(existingTask));
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> taskService.updateTask(USER_ID, taskId, request));
+
+        assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
+        assertEquals(LocalDate.of(2026, 7, 17), existingTask.getEndDate());
+    }
+
+    @Test
+    @DisplayName("시간 부분 수정 후 같은 날짜의 종료 시간보다 늦어지면 일정 수정 실패")
+    void updateTask_Fail_WhenUpdatedStartTimeIsAfterExistingEndTime() {
+        // given
+        Long taskId = 1L;
+        Task existingTask = Task.builder()
+                .title("기존 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(10, 0))
+                .endTime(LocalTime.of(11, 0))
+                .source(TaskSource.MANUAL)
+                .build();
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                null,
+                null,
+                null,
+                LocalTime.of(12, 0),
+                null,
+                null
+        );
+        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+                .thenReturn(Optional.of(existingTask));
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> taskService.updateTask(USER_ID, taskId, request));
+
+        assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
+        assertEquals(LocalTime.of(10, 0), existingTask.getStartTime());
+    }
+
+    @Test
+    @DisplayName("시간 부분 수정 후 같은 날짜의 종료 시간과 같아지면 일정 수정 실패")
+    void updateTask_Fail_WhenUpdatedStartTimeEqualsExistingEndTime() {
+        // given
+        Long taskId = 1L;
+        Task existingTask = Task.builder()
+                .title("기존 일정")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(10, 0))
+                .endTime(LocalTime.of(11, 0))
+                .source(TaskSource.MANUAL)
+                .build();
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                null,
+                null,
+                null,
+                LocalTime.of(11, 0),
+                null,
+                null
+        );
+        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+                .thenReturn(Optional.of(existingTask));
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> taskService.updateTask(USER_ID, taskId, request));
+
+        assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
+        assertEquals(LocalTime.of(10, 0), existingTask.getStartTime());
     }
 
     @Test
