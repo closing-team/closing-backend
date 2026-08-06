@@ -45,8 +45,11 @@ public class TermsService {
         List<Term> latestTerms = termRepository.findLatestTerms();
         validateRequiredTerms(latestTerms, request.getTermIds());
 
+        Set<Long> alreadyAgreed = userTermRepository.findAgreedTermIdsByUserId(userId);
+
         List<Term> agreedTerms = termRepository.findAllById(request.getTermIds());
         List<UserTerm> userTerms = agreedTerms.stream()
+                .filter(term -> !alreadyAgreed.contains(term.getId()))
                 .map(term -> UserTerm.builder().user(user).term(term).build())
                 .toList();
 
