@@ -19,13 +19,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -80,18 +80,15 @@ public class AiSessionController {
                                                         """
                                                         {
                                                           "success": false,
-                                                          "code": "AI401",
-                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                          "code": "COMMON401",
+                                                          "message": "인증이 필요합니다."
                                                         }
                                                         """)))
     })
     @PostMapping
     public ApiResponse<AiSessionResponseDto> createSession(
-            @Parameter(hidden = true)
-                    @RequestHeader(value = "Authorization", required = false)
-                    String authorizationHeader,
-            @RequestBody AiSessionRequestDto request) {
-        return ApiResponse.onSuccess(aiSessionService.createSession(authorizationHeader, request));
+            @AuthenticationPrincipal Long userId, @RequestBody AiSessionRequestDto request) {
+        return ApiResponse.onSuccess(aiSessionService.createSession(userId, request));
     }
 
     //세션 조회
@@ -113,8 +110,8 @@ public class AiSessionController {
                                                         """
                                                         {
                                                           "success": false,
-                                                          "code": "AI401",
-                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                          "code": "COMMON401",
+                                                          "message": "인증이 필요합니다."
                                                         }
                                                         """))),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -156,11 +153,9 @@ public class AiSessionController {
     })
     @GetMapping("/{sessionId}")
     public ApiResponse<AiSessionDetailResponseDto> getSession(
-            @Parameter(hidden = true)
-                    @RequestHeader(value = "Authorization", required = false)
-                    String authorizationHeader,
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "조회할 세션 ID", required = true) @PathVariable String sessionId) {
-        return ApiResponse.onSuccess(aiSessionService.getSession(authorizationHeader, sessionId));
+        return ApiResponse.onSuccess(aiSessionService.getSession(userId, sessionId));
     }
 
     //메시지 전송
@@ -202,8 +197,8 @@ public class AiSessionController {
                                                         """
                                                         {
                                                           "success": false,
-                                                          "code": "AI401",
-                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                          "code": "COMMON401",
+                                                          "message": "인증이 필요합니다."
                                                         }
                                                         """))),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -274,14 +269,12 @@ public class AiSessionController {
     })
     @PostMapping("/{sessionId}/messages")
     public ApiResponse<AiSessionMessageResponseDto> sendMessage(
-            @Parameter(hidden = true)
-                    @RequestHeader(value = "Authorization", required = false)
-                    String authorizationHeader,
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "메시지를 전송할 세션 ID", required = true) @PathVariable
                     String sessionId,
             @RequestBody AiSessionMessageRequestDto request) {
         return ApiResponse.onSuccess(
-                aiSessionService.sendMessage(authorizationHeader, sessionId, request.message()));
+                aiSessionService.sendMessage(userId, sessionId, request.message()));
     }
 
     //임시 일정 수정
@@ -323,8 +316,8 @@ public class AiSessionController {
                                                         """
                                                         {
                                                           "success": false,
-                                                          "code": "AI401",
-                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                          "code": "COMMON401",
+                                                          "message": "인증이 필요합니다."
                                                         }
                                                         """))),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -395,9 +388,7 @@ public class AiSessionController {
     })
     @PatchMapping("/{sessionId}/tasks/{tempId}")
     public ApiResponse<AiGeneratedTaskDto> updateTask(
-            @Parameter(hidden = true)
-                    @RequestHeader(value = "Authorization", required = false)
-                    String authorizationHeader,
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "임시 일정이 속한 세션 ID", required = true) @PathVariable
                     String sessionId,
             @Parameter(description = "수정할 임시 일정 ID", example = "task-1", required = true)
@@ -405,7 +396,7 @@ public class AiSessionController {
                     String tempId,
             @RequestBody AiSessionTaskUpdateRequestDto request) {
         return ApiResponse.onSuccess(
-                aiSessionService.updateTask(authorizationHeader, sessionId, tempId, request));
+                aiSessionService.updateTask(userId, sessionId, tempId, request));
     }
 
     //임시 일정 삭제
@@ -429,8 +420,8 @@ public class AiSessionController {
                                                         """
                                                         {
                                                           "success": false,
-                                                          "code": "AI401",
-                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                          "code": "COMMON401",
+                                                          "message": "인증이 필요합니다."
                                                         }
                                                         """))),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -501,15 +492,13 @@ public class AiSessionController {
     })
     @DeleteMapping("/{sessionId}/tasks/{tempId}")
     public ApiResponse<Void> deleteTask(
-            @Parameter(hidden = true)
-                    @RequestHeader(value = "Authorization", required = false)
-                    String authorizationHeader,
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "임시 일정이 속한 세션 ID", required = true) @PathVariable
                     String sessionId,
             @Parameter(description = "삭제할 임시 일정 ID", example = "task-1", required = true)
                     @PathVariable
                     String tempId) {
-        aiSessionService.deleteTask(authorizationHeader, sessionId, tempId);
+        aiSessionService.deleteTask(userId, sessionId, tempId);
         return ApiResponse.onSuccess(null);
     }
 
@@ -534,8 +523,8 @@ public class AiSessionController {
                                                         """
                                                         {
                                                           "success": false,
-                                                          "code": "AI401",
-                                                          "message": "인증 토큰이 없거나 만료되었습니다."
+                                                          "code": "COMMON401",
+                                                          "message": "인증이 필요합니다."
                                                         }
                                                         """))),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -606,11 +595,8 @@ public class AiSessionController {
     })
     @PostMapping("/{sessionId}/confirm")
     public ApiResponse<AiSessionConfirmedResponseDto> confirmSession(
-            @Parameter(hidden = true)
-                    @RequestHeader(value = "Authorization", required = false)
-                    String authorizationHeader,
+            @AuthenticationPrincipal Long userId,
             @Parameter(description = "확정할 세션 ID", required = true) @PathVariable String sessionId) {
-        return ApiResponse.onSuccess(
-                aiSessionService.confirmSession(authorizationHeader, sessionId));
+        return ApiResponse.onSuccess(aiSessionService.confirmSession(userId, sessionId));
     }
 }
