@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Business", description = "사업자 인증 API")
 @RestController
-@RequestMapping("/api/v1/business")
+@RequestMapping("/api/v1/businesses")
 @RequiredArgsConstructor
 @SecurityRequirement(name = "bearerAuth")
 public class BusinessController {
