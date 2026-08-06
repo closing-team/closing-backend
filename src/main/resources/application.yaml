@@ -37,3 +37,6 @@ ai:
   server:
     base-url: ${AI_SERVER_BASE_URL:https://closing-ai-production.up.railway.app}
     timeout-seconds: 90
+
+nts:
+  service-key: ${NTS_SERVICE_KEY}
