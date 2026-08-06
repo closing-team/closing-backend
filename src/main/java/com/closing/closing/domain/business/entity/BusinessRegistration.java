@@ -49,4 +49,12 @@ public class BusinessRegistration extends BaseEntity {
         this.closePlannedDate = closePlannedDate;
     }
 
+    public void update(String businessNumber, String businessOwnerName,
+                       LocalDateTime businessOpenDate, LocalDateTime businessCloseDate) {
+        this.businessNumber = businessNumber;
+        this.businessOwnerName = businessOwnerName;
+        this.businessOpenDate = businessOpenDate;
+        this.businessCloseDate = businessCloseDate;
+    }
+
 }

@@ -71,6 +71,11 @@ public enum ErrorCode {
             "SUPPORT502",
             "기업마당 API 호출에 실패했습니다."),
 
+    // 사업자 인증 에러코드
+    BUSINESS_MISMATCH(HttpStatus.BAD_REQUEST, "BUSINESS_MISMATCH400", "사업자 정보가 국세청 조회 결과와 일치하지 않습니다."),
+    BUSINESS_CLOSED_EXPIRED(HttpStatus.UNPROCESSABLE_ENTITY, "BUSINESS_CLOSED_EXPIRED422", "폐업일로부터 6개월이 지나 인증할 수 없습니다."),
+    BUSINESS_NTS_FAIL(HttpStatus.FAILED_DEPENDENCY, "BUSINESS_NTS_FAIL424", "국세청 진위확인 API 응답에 실패했습니다."),
+
     // AI세션 에러코드
     AI_EMPTY_INITIAL_INPUT(HttpStatus.BAD_REQUEST, "AI_INITIAL_INPUT400", "초기 상황 입력 내용이 없습니다."),
     AI_LLM_GENERATION_FAILED(HttpStatus.FAILED_DEPENDENCY, "AI424", "일정 생성에 실패했습니다."),
