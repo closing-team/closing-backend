@@ -2,7 +2,6 @@ package com.closing.closing.domain.user.service;
 
 import com.closing.closing.domain.business.entity.BusinessRegistration;
 import com.closing.closing.domain.business.repository.BusinessRegistrationRepository;
-import com.closing.closing.domain.user.dto.request.UpdateUserRequest;
 import com.closing.closing.domain.user.dto.response.UserInfoResponse;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
@@ -32,7 +31,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserInfoResponse updateMyInfo(UpdateUserRequest request, MultipartFile image) {
+    public UserInfoResponse updateMyInfo(String nickname, MultipartFile image) {
         User user = getCurrentUser();
 
         String profileImageUrl = user.getProfileImageUrl();
@@ -40,7 +39,7 @@ public class UserService {
             profileImageUrl = imageStorage.upload(image, "profiles");
         }
 
-        user.updateProfile(request.getNickname(), profileImageUrl);
+        user.updateProfile(nickname, profileImageUrl);
 
         BusinessRegistration business = businessRegistrationRepository.findByUserId(user.getId()).orElse(null);
         return UserInfoResponse.from(user, business);
