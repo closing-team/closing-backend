@@ -6,6 +6,7 @@ import com.closing.closing.domain.auth.dto.response.KakaoTokenResponse;
 import com.closing.closing.domain.auth.dto.response.KakaoUserInfoResponse;
 import com.closing.closing.domain.auth.dto.response.LoginResponse;
 import com.closing.closing.domain.auth.dto.response.SignupResponse;
+import com.closing.closing.domain.auth.dto.response.TokenRefreshResponse;
 import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
@@ -75,6 +76,28 @@ public class AuthService {
         return SignupResponse.builder()
                 .accessToken(jwtProvider.createAccessToken(user.getId()))
                 .refreshToken(jwtProvider.createRefreshToken(user.getId()))
+                .build();
+    }
+
+    public TokenRefreshResponse refresh(String authorizationHeader) {
+        String token = extractToken(authorizationHeader);
+        try {
+            jwtProvider.validate(token);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(ErrorCode.AUTH_REFRESH_TOKEN_INVALID);
+        }
+
+        if (!jwtProvider.isRefreshToken(token)) {
+            throw new CustomException(ErrorCode.AUTH_REFRESH_TOKEN_INVALID);
+        }
+
+        Long userId = jwtProvider.getUserId(token);
+        userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+        return TokenRefreshResponse.builder()
+                .accessToken(jwtProvider.createAccessToken(userId))
+                .refreshToken(jwtProvider.createRefreshToken(userId))
                 .build();
     }
 

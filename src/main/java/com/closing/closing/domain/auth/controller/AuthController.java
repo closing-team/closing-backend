@@ -4,6 +4,7 @@ import com.closing.closing.domain.auth.dto.request.KakaoLoginRequest;
 import com.closing.closing.domain.auth.dto.request.SignupRequest;
 import com.closing.closing.domain.auth.dto.response.LoginResponse;
 import com.closing.closing.domain.auth.dto.response.SignupResponse;
+import com.closing.closing.domain.auth.dto.response.TokenRefreshResponse;
 import com.closing.closing.domain.auth.service.AuthService;
 import com.closing.closing.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,13 @@ public class AuthController {
             @Valid @RequestBody SignupRequest request) {
         String authorizationHeader = httpRequest.getHeader("Authorization");
         return ApiResponse.onSuccess(authService.signup(authorizationHeader, request));
+    }
+
+    @Operation(summary = "토큰 재발급", description = "리프레시 토큰으로 액세스 토큰과 리프레시 토큰을 재발급합니다.")
+    @SecurityRequirement(name = "bearerAuth")
+    @PostMapping("/refresh")
+    public ApiResponse<TokenRefreshResponse> refresh(HttpServletRequest httpRequest) {
+        return ApiResponse.onSuccess(authService.refresh(httpRequest.getHeader("Authorization")));
     }
 
     @Operation(summary = "로그아웃")
