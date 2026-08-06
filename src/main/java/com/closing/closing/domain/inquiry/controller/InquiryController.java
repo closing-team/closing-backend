@@ -9,7 +9,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -22,10 +24,12 @@ public class InquiryController {
 
     private final InquiryService inquiryService;
 
-    @Operation(summary = "1:1 문의 등록")
-    @PostMapping
-    public ApiResponse<InquiryResponse> createInquiry(@Valid @RequestBody CreateInquiryRequest request) {
-        return ApiResponse.onSuccess(inquiryService.createInquiry(request));
+    @Operation(summary = "1:1 문의 등록 (이미지 첨부 선택)")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<InquiryResponse> createInquiry(
+            @Valid @RequestPart("request") CreateInquiryRequest request,
+            @RequestPart(value = "images", required = false) List<MultipartFile> images) {
+        return ApiResponse.onSuccess(inquiryService.createInquiry(request, images));
     }
 
     @Operation(summary = "내 문의 내역 조회")
