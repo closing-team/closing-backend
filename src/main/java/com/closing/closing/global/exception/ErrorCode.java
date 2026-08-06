@@ -47,6 +47,7 @@ public enum ErrorCode {
 
     // 일정 에러코드
     TASK_TITLE_BLANK(HttpStatus.BAD_REQUEST, "TASK400", "일정 제목이 비어있습니다."),
+    TASK_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "TASK_PERIOD400", "일정 기간이 올바르지 않습니다."),
     TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "TASK404", "일정을 찾을 수 없습니다."),
 
     // 지원정보 에러코드
