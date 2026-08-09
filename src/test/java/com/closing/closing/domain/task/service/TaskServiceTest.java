@@ -330,6 +330,83 @@ class TaskServiceTest {
     }
 
     @Test
+    @DisplayName("일부 필드만 전달하면 해당 필드만 반영되고 나머지는 기존 값이 유지된다")
+    void updateTask_Success_WhenOnlyTitleProvided() {
+        // given
+        Long taskId = 1L;
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                "제목만 변경",
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("원래 제목")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(10, 30))
+                .endTime(LocalTime.of(11, 30))
+                .source(TaskSource.MANUAL)
+                .description("원래 설명")
+                .build();
+
+        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+                .thenReturn(Optional.of(existingTask));
+
+        // when
+        TaskResDTO.UpdateTaskResultDTO result =
+                taskService.updateTask(USER_ID, taskId, request);
+
+        // then
+        assertEquals("제목만 변경", result.title());
+        assertEquals(LocalDate.of(2026, 7, 15), existingTask.getStartDate());
+        assertEquals(LocalDate.of(2026, 7, 15), existingTask.getEndDate());
+        assertEquals(LocalTime.of(10, 30), existingTask.getStartTime());
+        assertEquals(LocalTime.of(11, 30), existingTask.getEndTime());
+        assertEquals("원래 설명", existingTask.getDescription());
+    }
+
+    @Test
+    @DisplayName("아무 필드도 전달하지 않으면 모든 필드가 기존 값으로 유지된다")
+    void updateTask_Success_WhenNoFieldProvided() {
+        // given
+        Long taskId = 1L;
+        TaskReqDTO.UpdateTaskDTO request = new TaskReqDTO.UpdateTaskDTO(
+                null, null, null, null, null, null
+        );
+
+        Task existingTask = Task.builder()
+                .registration(null)
+                .title("원래 제목")
+                .startDate(LocalDate.of(2026, 7, 15))
+                .endDate(LocalDate.of(2026, 7, 15))
+                .startTime(LocalTime.of(10, 30))
+                .endTime(LocalTime.of(11, 30))
+                .source(TaskSource.MANUAL)
+                .description("원래 설명")
+                .build();
+
+        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+                .thenReturn(Optional.of(existingTask));
+
+        // when
+        TaskResDTO.UpdateTaskResultDTO result =
+                taskService.updateTask(USER_ID, taskId, request);
+
+        // then
+        assertEquals("원래 제목", result.title());
+        assertEquals(LocalDate.of(2026, 7, 15), existingTask.getStartDate());
+        assertEquals(LocalDate.of(2026, 7, 15), existingTask.getEndDate());
+        assertEquals(LocalTime.of(10, 30), existingTask.getStartTime());
+        assertEquals(LocalTime.of(11, 30), existingTask.getEndTime());
+        assertEquals("원래 설명", existingTask.getDescription());
+    }
+
+    @Test
     @DisplayName("존재하지 않는 일정 수정 시 TASK404 예외 발생")
     void updateTask_Fail_WhenTaskNotFound() {
         // given

@@ -39,7 +39,10 @@ public class TaskController {
     /**
      * 일정 수정
      */
-    @Operation(summary = "일정 수정", description = "일정을 수정합니다.")
+    @Operation(
+            summary = "일정 수정",
+            description = "일정을 부분 수정합니다. 요청에 포함된 필드만 반영되며, 포함되지 않은 필드는 기존 값이 유지됩니다."
+    )
     @PatchMapping("/{taskId}")
     public ApiResponse<TaskResDTO.UpdateTaskResultDTO> updateTask(
             @AuthenticationPrincipal Long userId,
