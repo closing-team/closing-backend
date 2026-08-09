@@ -28,25 +28,25 @@ public class TaskReqDTO {
     ) {
     }
 
-    @Schema(description = "전달된 필드만 수정되며, 전달되지 않은 필드는 기존 값이 그대로 유지됩니다.")
+    @Schema(description = "null이 아닌 필드만 수정되며, 누락되었거나 null인 필드는 기존 값이 그대로 유지됩니다.")
     public record UpdateTaskDTO(
 
-            @Schema(description = "일정 제목", example = "매장 철거 업체 미팅")
+            @Schema(description = "일정 제목 (null이거나 미전달 시 기존 값 유지)", example = "매장 철거 업체 미팅")
             String title,
 
-            @Schema(description = "시작 날짜", example = "2026-07-16")
+            @Schema(description = "시작 날짜 (null이거나 미전달 시 기존 값 유지)", example = "2026-07-16")
             LocalDate startDate,
 
-            @Schema(description = "종료 날짜", example = "2026-07-17")
+            @Schema(description = "종료 날짜 (null이거나 미전달 시 기존 값 유지)", example = "2026-07-17")
             LocalDate endDate,
 
-            @Schema(description = "시작 시간", example = "12:00:00")
+            @Schema(description = "시작 시간 (null이거나 미전달 시 기존 값 유지)", example = "12:00:00")
             LocalTime startTime,
 
-            @Schema(description = "종료 시간", example = "13:00:00")
+            @Schema(description = "종료 시간 (null이거나 미전달 시 기존 값 유지)", example = "13:00:00")
             LocalTime endTime,
 
-            @Schema(description = "상세 설명", example = "A업체, B업체 견적 비교")
+            @Schema(description = "상세 설명 (null이거나 미전달 시 기존 값 유지)", example = "A업체, B업체 견적 비교")
             String description
     ) {
     }
