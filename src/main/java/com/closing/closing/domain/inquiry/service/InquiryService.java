@@ -1,6 +1,5 @@
 package com.closing.closing.domain.inquiry.service;
 
-import com.closing.closing.domain.inquiry.dto.request.CreateInquiryRequest;
 import com.closing.closing.domain.inquiry.dto.response.InquiryResponse;
 import com.closing.closing.domain.inquiry.entity.Inquiry;
 import com.closing.closing.domain.inquiry.repository.InquiryRepository;
@@ -32,15 +31,15 @@ public class InquiryService {
     private final ImageStorage imageStorage;
 
     @Transactional
-    public InquiryResponse createInquiry(CreateInquiryRequest request, List<MultipartFile> images) {
+    public InquiryResponse createInquiry(String type, String content, List<MultipartFile> images) {
         User user = getCurrentUser();
 
         List<String> imageUrls = uploadImages(images);
 
         Inquiry inquiry = Inquiry.builder()
                 .user(user)
-                .type(request.getType())
-                .content(request.getContent())
+                .type(type)
+                .content(content)
                 .imageUrls(imageUrls.isEmpty() ? null : imageUrls)
                 .build();
 
@@ -56,9 +55,7 @@ public class InquiryService {
     }
 
     private List<String> uploadImages(List<MultipartFile> images) {
-        if (images == null || images.isEmpty()) {
-            return List.of();
-        }
+        if (images == null || images.isEmpty()) return List.of();
 
         List<String> uploadedUrls = new ArrayList<>();
         try {
