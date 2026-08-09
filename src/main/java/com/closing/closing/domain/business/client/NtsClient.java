@@ -41,7 +41,7 @@ public class NtsClient {
                             .path("/api/nts-businessman/v1/validate")
                             .queryParam("serviceKey", serviceKey)
                             .queryParam("returnType", "JSON")
-                            .build())
+                            .build(true))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
