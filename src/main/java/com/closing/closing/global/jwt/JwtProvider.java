@@ -60,6 +60,10 @@ public class JwtProvider {
         return TYPE_SIGNUP.equals(getClaims(token).get(CLAIM_TYPE, String.class));
     }
 
+    public boolean isRefreshToken(String token) {
+        return TYPE_REFRESH.equals(getClaims(token).get(CLAIM_TYPE, String.class));
+    }
+
     public void validate(String token) {
         try {
             getClaims(token);

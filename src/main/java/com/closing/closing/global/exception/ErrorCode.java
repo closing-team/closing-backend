@@ -14,6 +14,7 @@ public enum ErrorCode {
     AUTH_KAKAO(HttpStatus.UNAUTHORIZED, "AUTH_KAKAO401", "카카오 인증에 실패했습니다."),
     AUTH_KAKAO_EXPIRED(HttpStatus.UNAUTHORIZED, "AUTH_KAKAO_EXPIRED401", "카카오 토큰이 만료되었습니다."),
     AUTH_SIGNUP_TOKEN_NOT_FOUND(HttpStatus.NOT_FOUND, "AUTH_SIGNUP_TOKEN404", "유효하지 않거나 만료된 가입 토큰입니다."),
+    AUTH_REFRESH_TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "AUTH_REFRESH401", "유효하지 않거나 만료된 리프레시 토큰입니다."),
 
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USER404", "사용자를 찾을 수 없습니다."),
     USER_PHONE_INVALID(HttpStatus.BAD_REQUEST, "USER_PHONE_INVALID400", "전화번호 형식이 올바르지 않습니다."),
