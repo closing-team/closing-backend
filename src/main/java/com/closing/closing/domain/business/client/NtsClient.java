@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -33,15 +34,11 @@ public class NtsClient {
                 ))
         );
 
+        String url = VALIDATE_URL + "?serviceKey=" + serviceKey + "&returnType=JSON";
+
         try {
             return restClient.post()
-                    .uri(builder -> builder
-                            .scheme("https")
-                            .host("api.odcloud.kr")
-                            .path("/api/nts-businessman/v1/validate")
-                            .queryParam("serviceKey", serviceKey)
-                            .queryParam("returnType", "JSON")
-                            .build(true))
+                    .uri(URI.create(url))
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body)
                     .retrieve()
