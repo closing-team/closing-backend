@@ -18,10 +18,11 @@ import com.closing.closing.domain.ai.dto.response.AiSessionResponseDto;
 import com.closing.closing.domain.ai.entity.AiSession;
 import com.closing.closing.domain.ai.entity.AiSessionStatus;
 import com.closing.closing.domain.ai.repository.AiSessionRepository;
-import com.closing.closing.domain.business.entity.BusinessRegistration;
 import com.closing.closing.domain.task.entity.Task;
 import com.closing.closing.domain.task.entity.TaskSource;
 import com.closing.closing.domain.task.repository.TaskRepository;
+import com.closing.closing.domain.user.entity.User;
+import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -57,6 +58,7 @@ public class AiSessionService {
     private final WebClient aiWebClient;
     private final AiSessionRepository aiSessionRepository;
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     public AiSessionResponseDto createSession(Long userId, AiSessionRequestDto request) {
@@ -401,13 +403,11 @@ public class AiSessionService {
             throw new CustomException(ErrorCode.AI_NO_TASKS_TO_CONFIRM);
         }
 
-        BusinessRegistration registration =
-                taskRepository
-                        .findBusinessRegistrationByUserId(userId)
-                        .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         List<Task> tasks =
-                generatedTasks.stream().map(task -> toTaskEntity(task, registration)).toList();
+                generatedTasks.stream().map(task -> toTaskEntity(task, user)).toList();
         List<Task> savedTasks = taskRepository.saveAll(tasks);
 
         List<Long> confirmedTaskIds = savedTasks.stream().map(Task::getId).toList();
@@ -431,9 +431,9 @@ public class AiSessionService {
                 sessionId, AiSessionStatus.ALREADY_CONFIRMED.name(), confirmedTasks);
     }
 
-    private Task toTaskEntity(AiGeneratedTaskDto task, BusinessRegistration registration) {
+    private Task toTaskEntity(AiGeneratedTaskDto task, User user) {
         return Task.builder()
-                .registration(registration)
+                .user(user)
                 .title(task.title())
                 .startDate(task.startDate())
                 .endDate(task.endDate())

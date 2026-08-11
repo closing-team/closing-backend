@@ -1,6 +1,6 @@
 package com.closing.closing.domain.task.entity;
 
-import com.closing.closing.domain.business.entity.BusinessRegistration;
+import com.closing.closing.domain.user.entity.User;
 import com.closing.closing.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -23,8 +23,8 @@ public class Task extends BaseEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "registration_id", nullable = false)
-    private BusinessRegistration registration;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false)
     private String title;
@@ -48,9 +48,9 @@ public class Task extends BaseEntity {
     private String description;
 
     @Builder
-    public Task(BusinessRegistration registration, String title, LocalDate startDate,
+    public Task(User user, String title, LocalDate startDate,
                 LocalDate endDate, LocalTime startTime, LocalTime endTime, TaskSource source, String description) {
-        this.registration = registration;
+        this.user = user;
         this.title = title;
         this.startDate = startDate;
         this.endDate = endDate;

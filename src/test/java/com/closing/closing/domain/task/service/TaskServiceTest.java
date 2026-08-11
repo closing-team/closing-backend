@@ -1,11 +1,12 @@
 package com.closing.closing.domain.task.service;
 
-import com.closing.closing.domain.business.entity.BusinessRegistration;
 import com.closing.closing.domain.task.dto.TaskReqDTO;
 import com.closing.closing.domain.task.dto.TaskResDTO;
 import com.closing.closing.domain.task.entity.Task;
 import com.closing.closing.domain.task.entity.TaskSource;
 import com.closing.closing.domain.task.repository.TaskRepository;
+import com.closing.closing.domain.user.entity.User;
+import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import org.junit.jupiter.api.DisplayName;
@@ -39,13 +40,16 @@ class TaskServiceTest {
     private TaskRepository taskRepository;
 
     @Mock
-    private BusinessRegistration businessRegistration;
+    private UserRepository userRepository;
+
+    @Mock
+    private User user;
 
     @InjectMocks
     private TaskService taskService;
 
     @Test
-    @DisplayName("일정 생성 성공")
+    @DisplayName("사업자 등록 여부와 관계없이 로그인 사용자의 일정 생성 성공")
     void createTask_Success() throws Exception {
         // given
         TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
@@ -58,7 +62,7 @@ class TaskServiceTest {
         );
 
         Task savedTask = Task.builder()
-                .registration(businessRegistration)
+                .user(user)
                 .title("매장 철거 업체 미팅")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -71,8 +75,7 @@ class TaskServiceTest {
         // @CreatedDate 직접 주입
         setCreatedAt(savedTask, LocalDateTime.of(2026, 7, 15, 10, 0));
 
-        when(taskRepository.findBusinessRegistrationByUserId(USER_ID))
-                .thenReturn(Optional.of(businessRegistration));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
 
         // when
@@ -80,7 +83,7 @@ class TaskServiceTest {
                 taskService.createTask(USER_ID, request);
 
         // then
-        verify(taskRepository).save(argThat(task -> task.getRegistration() == businessRegistration));
+        verify(taskRepository).save(argThat(task -> task.getUser() == user));
         assertEquals("매장 철거 업체 미팅", result.title());
         assertEquals(LocalDate.of(2026, 7, 15), result.startDate());
         assertEquals("manual", result.source());
@@ -145,7 +148,7 @@ class TaskServiceTest {
                 () -> taskService.createTask(USER_ID, request));
 
         assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
-        verify(taskRepository, never()).findBusinessRegistrationByUserId(USER_ID);
+        verify(userRepository, never()).findById(USER_ID);
         verify(taskRepository, never()).save(any(Task.class));
     }
 
@@ -167,7 +170,7 @@ class TaskServiceTest {
                 () -> taskService.createTask(USER_ID, request));
 
         assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
-        verify(taskRepository, never()).findBusinessRegistrationByUserId(USER_ID);
+        verify(userRepository, never()).findById(USER_ID);
         verify(taskRepository, never()).save(any(Task.class));
     }
 
@@ -184,7 +187,7 @@ class TaskServiceTest {
                 null
         );
         Task savedTask = Task.builder()
-                .registration(businessRegistration)
+                .user(user)
                 .title(request.title())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
@@ -194,8 +197,7 @@ class TaskServiceTest {
                 .build();
         setCreatedAt(savedTask, LocalDateTime.of(2026, 7, 15, 20, 0));
 
-        when(taskRepository.findBusinessRegistrationByUserId(USER_ID))
-                .thenReturn(Optional.of(businessRegistration));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
 
         // when
@@ -225,7 +227,7 @@ class TaskServiceTest {
                 () -> taskService.createTask(USER_ID, request));
 
         assertEquals(ErrorCode.TASK_INVALID_PERIOD, exception.getErrorCode());
-        verify(taskRepository, never()).findBusinessRegistrationByUserId(USER_ID);
+        verify(userRepository, never()).findById(USER_ID);
         verify(taskRepository, never()).save(any(Task.class));
     }
 
@@ -242,7 +244,7 @@ class TaskServiceTest {
                 null
         );
         Task savedTask = Task.builder()
-                .registration(businessRegistration)
+                .user(user)
                 .title(request.title())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
@@ -252,8 +254,7 @@ class TaskServiceTest {
                 .build();
         setCreatedAt(savedTask, LocalDateTime.of(2026, 7, 15, 13, 0));
 
-        when(taskRepository.findBusinessRegistrationByUserId(USER_ID))
-                .thenReturn(Optional.of(businessRegistration));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(taskRepository.save(any(Task.class))).thenReturn(savedTask);
 
         // when
@@ -266,8 +267,8 @@ class TaskServiceTest {
     }
 
     @Test
-    @DisplayName("사용자의 사업자 등록 정보를 찾을 수 없으면 일정 생성 실패")
-    void createTask_Fail_WhenBusinessRegistrationNotFound() {
+    @DisplayName("사용자를 찾을 수 없으면 일정 생성 실패")
+    void createTask_Fail_WhenUserNotFound() {
         // given
         TaskReqDTO.CreateTaskDTO request = new TaskReqDTO.CreateTaskDTO(
                 "일정",
@@ -277,8 +278,7 @@ class TaskServiceTest {
                 null,
                 null
         );
-        when(taskRepository.findBusinessRegistrationByUserId(USER_ID))
-                .thenReturn(Optional.empty());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
         // when & then
         CustomException exception = assertThrows(CustomException.class,
@@ -302,7 +302,7 @@ class TaskServiceTest {
         );
 
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("원래 제목")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -314,7 +314,7 @@ class TaskServiceTest {
         setCreatedAt(existingTask, LocalDateTime.of(2026, 7, 15, 10, 0));
         setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 16, 10, 0));
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when
@@ -344,7 +344,7 @@ class TaskServiceTest {
         );
 
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("원래 제목")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -354,7 +354,7 @@ class TaskServiceTest {
                 .description("원래 설명")
                 .build();
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when
@@ -380,7 +380,7 @@ class TaskServiceTest {
         );
 
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("원래 제목")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -390,7 +390,7 @@ class TaskServiceTest {
                 .description("원래 설명")
                 .build();
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when
@@ -415,7 +415,7 @@ class TaskServiceTest {
                 "제목 변경", null, null, null, null, null
         );
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -444,7 +444,7 @@ class TaskServiceTest {
                 null,
                 null
         );
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when & then
@@ -476,7 +476,7 @@ class TaskServiceTest {
                 null,
                 null
         );
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when & then
@@ -508,7 +508,7 @@ class TaskServiceTest {
                 null,
                 null
         );
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when & then
@@ -525,7 +525,7 @@ class TaskServiceTest {
         // given
         Long taskId = 1L;
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("삭제할 일정")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -535,7 +535,7 @@ class TaskServiceTest {
                 .description("설명")
                 .build();
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when & then
@@ -549,7 +549,7 @@ class TaskServiceTest {
         // given
         Long taskId = 999L;
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -565,7 +565,7 @@ class TaskServiceTest {
         // given
         Long taskId = 1L;
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("매장 철거 업체 미팅")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 16))
@@ -577,7 +577,7 @@ class TaskServiceTest {
         setCreatedAt(existingTask, LocalDateTime.of(2026, 7, 4, 13, 0));
         setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 4, 13, 5));
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when
@@ -603,7 +603,7 @@ class TaskServiceTest {
         // given
         Long taskId = 999L;
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -618,7 +618,7 @@ class TaskServiceTest {
     void getTask_Fail_WhenTaskBelongsToAnotherUser() {
         // given
         Long taskId = 1L;
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -636,7 +636,7 @@ class TaskServiceTest {
         TaskReqDTO.CompleteTaskDTO request = new TaskReqDTO.CompleteTaskDTO(true);
 
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("미완료 일정")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -644,7 +644,7 @@ class TaskServiceTest {
                 .build();
         setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 15, 14, 0));
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when
@@ -663,7 +663,7 @@ class TaskServiceTest {
         TaskReqDTO.CompleteTaskDTO request = new TaskReqDTO.CompleteTaskDTO(false);
 
         Task existingTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("완료된 일정")
                 .startDate(LocalDate.of(2026, 7, 15))
                 .endDate(LocalDate.of(2026, 7, 15))
@@ -672,7 +672,7 @@ class TaskServiceTest {
         existingTask.complete(true); // 먼저 완료 상태로 세팅
         setUpdatedAt(existingTask, LocalDateTime.of(2026, 7, 15, 14, 0));
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.of(existingTask));
 
         // when
@@ -690,7 +690,7 @@ class TaskServiceTest {
         Long taskId = 999L;
         TaskReqDTO.CompleteTaskDTO request = new TaskReqDTO.CompleteTaskDTO(true);
 
-        when(taskRepository.findByIdAndRegistration_User_Id(taskId, USER_ID))
+        when(taskRepository.findByIdAndUser_Id(taskId, USER_ID))
                 .thenReturn(Optional.empty());
 
         // when & then
@@ -709,7 +709,7 @@ class TaskServiceTest {
         LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
         Task julyTask = Task.builder()
-                .registration(null)
+                .user(user)
                 .title("7월 일정")
                 .startDate(LocalDate.of(2026, 7, 10))
                 .endDate(LocalDate.of(2026, 7, 10))
@@ -717,8 +717,8 @@ class TaskServiceTest {
                 .build();
 
         // 현재 사용자의 전체 Task: 2개 (1개 완료)
-        when(taskRepository.countByRegistration_User_Id(USER_ID)).thenReturn(2L);
-        when(taskRepository.countByRegistration_User_IdAndIsCompletedTrue(USER_ID))
+        when(taskRepository.countByUser_Id(USER_ID)).thenReturn(2L);
+        when(taskRepository.countByUser_IdAndIsCompletedTrue(USER_ID))
                 .thenReturn(1L);
         // 7월 캘린더: 1개만 해당
         when(taskRepository.findAllByUserIdAndMonth(USER_ID, startOfMonth, endOfMonth))
@@ -745,8 +745,8 @@ class TaskServiceTest {
         LocalDate startOfMonth = yearMonth.atDay(1);
         LocalDate endOfMonth = yearMonth.atEndOfMonth();
 
-        when(taskRepository.countByRegistration_User_Id(USER_ID)).thenReturn(0L);
-        when(taskRepository.countByRegistration_User_IdAndIsCompletedTrue(USER_ID))
+        when(taskRepository.countByUser_Id(USER_ID)).thenReturn(0L);
+        when(taskRepository.countByUser_IdAndIsCompletedTrue(USER_ID))
                 .thenReturn(0L);
         when(taskRepository.findAllByUserIdAndMonth(USER_ID, startOfMonth, endOfMonth))
                 .thenReturn(List.of());
