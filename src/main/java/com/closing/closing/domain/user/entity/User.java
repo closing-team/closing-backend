@@ -20,7 +20,7 @@ public class User extends BaseEntity {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String kakaoId;
 
     @Column(nullable = false, length = 50)
@@ -63,6 +63,7 @@ public class User extends BaseEntity {
     }
 
     public void withdraw() {
+        this.kakaoId = null;
         this.deletedAt = LocalDateTime.now();
     }
 }
