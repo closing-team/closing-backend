@@ -35,7 +35,7 @@ public class AuthService {
         KakaoTokenResponse kakaoToken = kakaoAuthClient.getToken(code);
         KakaoUserInfoResponse userInfo = kakaoAuthClient.getUserInfo(kakaoToken.getAccessToken());
 
-        Optional<User> existingUser = userRepository.findByKakaoId(userInfo.getKakaoId());
+        Optional<User> existingUser = userRepository.findByKakaoIdAndDeletedAtIsNull(userInfo.getKakaoId());
 
         if (existingUser.isEmpty()) {
             User newUser = User.builder()
