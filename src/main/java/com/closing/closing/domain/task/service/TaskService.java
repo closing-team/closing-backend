@@ -1,11 +1,12 @@
 package com.closing.closing.domain.task.service;
 
-import com.closing.closing.domain.business.entity.BusinessRegistration;
 import com.closing.closing.domain.task.dto.TaskReqDTO;
 import com.closing.closing.domain.task.dto.TaskResDTO;
 import com.closing.closing.domain.task.entity.Task;
 import com.closing.closing.domain.task.entity.TaskSource;
 import com.closing.closing.domain.task.repository.TaskRepository;
+import com.closing.closing.domain.user.entity.User;
+import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.List;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final UserRepository userRepository;
 
     @Transactional
     public TaskResDTO.CreateTaskResultDTO createTask(
@@ -39,11 +41,11 @@ public class TaskService {
                 request.startTime(),
                 request.endTime());
 
-        BusinessRegistration registration = taskRepository.findBusinessRegistrationByUserId(userId)
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
         Task task = Task.builder()
-                .registration(registration)
+                .user(user)
                 .title(request.title())
                 .startDate(request.startDate())
                 .endDate(request.endDate())
@@ -64,7 +66,7 @@ public class TaskService {
             Long taskId,
             TaskReqDTO.UpdateTaskDTO request
     ) {
-        Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
+        Task task = taskRepository.findByIdAndUser_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         LocalDate updatedStartDate = request.startDate() != null
@@ -100,14 +102,14 @@ public class TaskService {
 
     @Transactional
     public void deleteTask(Long userId, Long taskId) {
-        Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
+        Task task = taskRepository.findByIdAndUser_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         taskRepository.delete(task);
     }
 
     public TaskResDTO.TaskDetailDTO getTask(Long userId, Long taskId) {
-        Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
+        Task task = taskRepository.findByIdAndUser_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         return TaskResDTO.TaskDetailDTO.from(task);
@@ -119,7 +121,7 @@ public class TaskService {
             Long taskId,
             TaskReqDTO.CompleteTaskDTO request
     ) {
-        Task task = taskRepository.findByIdAndRegistration_User_Id(taskId, userId)
+        Task task = taskRepository.findByIdAndUser_Id(taskId, userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.TASK_NOT_FOUND));
 
         task.complete(request.isCompleted());
@@ -128,8 +130,8 @@ public class TaskService {
     }
 
     public TaskResDTO.HomeDTO getHome(Long userId, YearMonth yearMonth) {
-        long totalCount = taskRepository.countByRegistration_User_Id(userId);
-        long completedCount = taskRepository.countByRegistration_User_IdAndIsCompletedTrue(userId);
+        long totalCount = taskRepository.countByUser_Id(userId);
+        long completedCount = taskRepository.countByUser_IdAndIsCompletedTrue(userId);
         double progressRate = totalCount == 0 ? 0.0
                 : Math.round((double) completedCount / totalCount * 1000) / 10.0;
 
