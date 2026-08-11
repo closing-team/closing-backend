@@ -1,17 +1,15 @@
-DELETE FROM ai_sessions
-WHERE status = 'ALREADY_CONFIRMED'
-   OR confirmed_task_ids IS NOT NULL;
+ALTER TABLE tasks
+    ADD COLUMN user_id BIGINT;
 
-DELETE FROM tasks;
+UPDATE tasks
+SET user_id = (
+    SELECT business_registrations.user_id
+    FROM business_registrations
+    WHERE business_registrations.registration_id = tasks.registration_id
+);
 
 ALTER TABLE tasks
-    DROP CONSTRAINT fk_tasks_registration;
-
-ALTER TABLE tasks
-    DROP COLUMN registration_id;
-
-ALTER TABLE tasks
-    ADD COLUMN user_id BIGINT NOT NULL;
+    ALTER COLUMN user_id SET NOT NULL;
 
 ALTER TABLE tasks
     ADD CONSTRAINT fk_tasks_user
@@ -19,3 +17,9 @@ ALTER TABLE tasks
 
 CREATE INDEX idx_tasks_user
     ON tasks (user_id);
+
+ALTER TABLE tasks
+    DROP CONSTRAINT fk_tasks_registration;
+
+ALTER TABLE tasks
+    DROP COLUMN registration_id;
