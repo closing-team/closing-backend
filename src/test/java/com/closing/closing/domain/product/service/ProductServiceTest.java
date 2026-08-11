@@ -79,6 +79,7 @@ class ProductServiceTest {
     @DisplayName("상품 상세 조회 시 찜·소유 여부와 거리 정보를 반환한다")
     void getProduct_success() {
         // 상품 상세 조회의 응답 조립과 사용자별 상태를 검증한다.
+        seller.updateLocation("원흥동");
         Product product = createProduct(PRODUCT_ID, seller, List.of("old.jpg"));
         ProductRequest request = new ProductRequest();
         request.setLatitude(new BigDecimal("37.5665"));
@@ -96,6 +97,7 @@ class ProductServiceTest {
         assertThat(response.isOwner()).isTrue();
         assertThat(response.getTradeLocation()).isNotNull();
         assertThat(response.getSeller().getMemberId()).isEqualTo(USER_ID);
+        assertThat(response.getSeller().getLocation()).isEqualTo("원흥동");
     }
 
     @Test
@@ -108,6 +110,36 @@ class ProductServiceTest {
         assertErrorCode(
                 () -> productService.getProduct(PRODUCT_ID, USER_ID, new ProductRequest()),
                 ErrorCode.PRODUCT_NOT_FOUND
+        );
+    }
+
+    @Test
+    @DisplayName("판매자 활동 지역을 수정한다")
+    void updateSellerLocation_success() {
+        given(entityManager.find(User.class, USER_ID)).willReturn(seller);
+
+        var response = productService.updateSellerLocation(USER_ID, " 원흥동 ");
+
+        assertThat(seller.getLocation()).isEqualTo("원흥동");
+        assertThat(response.getLocation()).isEqualTo("원흥동");
+    }
+
+    @Test
+    @DisplayName("존재하지 않거나 탈퇴한 사용자는 판매자 활동 지역을 수정할 수 없다")
+    void updateSellerLocation_userNotFound() {
+        given(entityManager.find(User.class, USER_ID)).willReturn(null);
+
+        assertErrorCode(
+                () -> productService.updateSellerLocation(USER_ID, "원흥동"),
+                ErrorCode.USER_NOT_FOUND
+        );
+
+        seller.withdraw();
+        given(entityManager.find(User.class, USER_ID)).willReturn(seller);
+
+        assertErrorCode(
+                () -> productService.updateSellerLocation(USER_ID, "원흥동"),
+                ErrorCode.USER_NOT_FOUND
         );
     }
 

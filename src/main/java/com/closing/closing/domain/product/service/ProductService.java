@@ -77,6 +77,19 @@ public class ProductService {
         );
     }
 
+    @Transactional
+    public SellerLocationResponse updateSellerLocation(Long userId, String location) {
+        User seller = entityManager.find(User.class, userId);
+
+        if (seller == null || seller.getDeletedAt() != null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        seller.updateLocation(location.trim());
+
+        return SellerLocationResponse.from(seller);
+    }
+
 
     @Transactional
     public ProductCreateResponse createProduct(

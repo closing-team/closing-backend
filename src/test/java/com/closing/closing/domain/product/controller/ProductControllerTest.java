@@ -29,6 +29,7 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -106,7 +107,7 @@ class ProductControllerTest {
         ProductResponse response = new ProductResponse(
                 10L, "중고 의자", 100_000, "설명", List.of("one.jpg"),
                 null, null, null, null, List.of(), null, ProductStatus.SELLING,
-                false, true, new SellerResponse(AUTHENTICATED_USER_ID, "판매자", null),
+                false, true, new SellerResponse(AUTHENTICATED_USER_ID, "판매자", "원흥동"),
                 LocalDateTime.of(2026, 7, 21, 10, 0)
         );
         given(productService.getProduct(
@@ -122,7 +123,35 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.productId").value(10))
                 .andExpect(jsonPath("$.data.title").value("중고 의자"))
-                .andExpect(jsonPath("$.data.isOwner").value(true));
+                .andExpect(jsonPath("$.data.isOwner").value(true))
+                .andExpect(jsonPath("$.data.seller.location").value("원흥동"));
+    }
+
+    @Test
+    @DisplayName("PATCH /api/v1/products/me/location 요청으로 판매자 활동 지역을 수정한다")
+    void updateSellerLocation_success() throws Exception {
+        given(productService.updateSellerLocation(AUTHENTICATED_USER_ID, "원흥동"))
+                .willReturn(new SellerLocationResponse("원흥동"));
+
+        mockMvc.perform(patch("/api/v1/products/me/location")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"location\":\"원흥동\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.location").value("원흥동"));
+
+        verify(productService).updateSellerLocation(AUTHENTICATED_USER_ID, "원흥동");
+    }
+
+    @Test
+    @DisplayName("판매자 활동 지역은 동 단위 문자열이어야 한다")
+    void updateSellerLocation_invalidLocation() throws Exception {
+        mockMvc.perform(patch("/api/v1/products/me/location")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"location\":\"서울특별시 중구\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"));
+
+        verify(productService, never()).updateSellerLocation(anyLong(), anyString());
     }
 
     @Test

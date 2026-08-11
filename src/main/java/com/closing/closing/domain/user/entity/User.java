@@ -35,17 +35,21 @@ public class User extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String profileImageUrl;
 
+    @Column(length = 50)
+    private String location;
+
     private LocalDateTime deletedAt;
 
     @Builder
     public User(String kakaoId, String nickname, String name, String phone,
-                String email, String profileImageUrl) {
+                String email, String profileImageUrl, String location) {
         this.kakaoId = kakaoId;
         this.nickname = nickname;
         this.name = name;
         this.phone = phone;
         this.email = email;
         this.profileImageUrl = profileImageUrl;
+        this.location = location;
     }
 
     public void completeSignup(String name, String nickname, String phone,
@@ -60,6 +64,10 @@ public class User extends BaseEntity {
     public void updateProfile(String nickname, String profileImageUrl) {
         this.nickname = nickname;
         this.profileImageUrl = profileImageUrl;
+    }
+
+    public void updateLocation(String location) {
+        this.location = location;
     }
 
     public void withdraw() {
