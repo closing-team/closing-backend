@@ -1,7 +1,6 @@
 package com.closing.closing.domain.auth.service;
 
 import com.closing.closing.domain.auth.client.KakaoAuthClient;
-import com.closing.closing.domain.auth.dto.request.SignupRequest;
 import com.closing.closing.domain.auth.dto.response.KakaoTokenResponse;
 import com.closing.closing.domain.auth.dto.response.KakaoUserInfoResponse;
 import com.closing.closing.domain.auth.dto.response.LoginResponse;
@@ -12,9 +11,11 @@ import com.closing.closing.domain.user.repository.UserRepository;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import com.closing.closing.global.jwt.JwtProvider;
+import com.closing.closing.global.storage.ImageStorage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Optional;
 
@@ -22,9 +23,12 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final String PROFILE_DIRECTORY = "profiles";
+
     private final KakaoAuthClient kakaoAuthClient;
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
+    private final ImageStorage imageStorage;
 
     @Transactional
     public LoginResponse kakaoLogin(String code) {
@@ -53,7 +57,8 @@ public class AuthService {
     }
 
     @Transactional
-    public SignupResponse signup(String authorizationHeader, SignupRequest request) {
+    public SignupResponse signup(String authorizationHeader, String name, String nickname,
+                                 String phone, String email, MultipartFile image) {
         String token = extractToken(authorizationHeader);
         try {
             jwtProvider.validate(token);
@@ -65,13 +70,12 @@ public class AuthService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
 
-        user.completeSignup(
-                request.getName(),
-                request.getNickname(),
-                request.getPhone(),
-                request.getEmail(),
-                request.getProfileImageUrl()
-        );
+        String profileImageUrl = null;
+        if (image != null && !image.isEmpty()) {
+            profileImageUrl = imageStorage.upload(image, PROFILE_DIRECTORY);
+        }
+
+        user.completeSignup(name, nickname, phone, email, profileImageUrl);
 
         return SignupResponse.builder()
                 .accessToken(jwtProvider.createAccessToken(user.getId()))
