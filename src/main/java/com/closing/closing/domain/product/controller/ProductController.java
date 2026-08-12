@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @SecurityRequirement(name = "bearerAuth")
-@Tag(name = "09. Product", description = "중고거래 상품 API")
+@Tag(name = "10. Product", description = "중고거래 상품 API")
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor

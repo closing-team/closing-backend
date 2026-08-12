@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.YearMonth;
 
-@Tag(name = "05. Task", description = "캘린더 일정 API")
+@Tag(name = "06. Task", description = "캘린더 일정 API")
 @RestController
 @RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor
