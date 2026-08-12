@@ -47,3 +47,5 @@ out/
 /AGENTS.md
 /agent-docs/
 /notion.md
+application-local.yaml
+src/main/resources/application-local.yaml
