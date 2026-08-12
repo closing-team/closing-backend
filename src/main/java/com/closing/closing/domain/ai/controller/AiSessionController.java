@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "AI", description = "AI 세션 API")
+@Tag(name = "06. AI", description = "AI 세션 API")
 @RestController
 @RequestMapping("/api/v1/ai/sessions")
 @RequiredArgsConstructor
