@@ -298,10 +298,11 @@ public class AiSessionService {
 
         List<AiGeneratedTaskDto> generatedTasks =
                 deserialize(aiSession.getGeneratedTasks(), new TypeReference<>() {});
-        generatedTasks.stream()
-                .filter(task -> task.tempId().equals(tempId))
-                .findFirst()
-                .orElseThrow(() -> new CustomException(ErrorCode.AI_TEMP_TASK_NOT_FOUND));
+        AiGeneratedTaskDto existingTask =
+                generatedTasks.stream()
+                        .filter(task -> task.tempId().equals(tempId))
+                        .findFirst()
+                        .orElseThrow(() -> new CustomException(ErrorCode.AI_TEMP_TASK_NOT_FOUND));
 
         validateTaskTitle(request.title());
 
@@ -309,11 +310,11 @@ public class AiSessionService {
                 new AiGeneratedTaskDto(
                         tempId,
                         request.title(),
-                        request.startDate(),
-                        request.startTime(),
-                        request.endDate(),
-                        request.endTime(),
-                        request.memo());
+                        request.startDate() != null ? request.startDate() : existingTask.startDate(),
+                        request.startTime() != null ? request.startTime() : existingTask.startTime(),
+                        request.endDate() != null ? request.endDate() : existingTask.endDate(),
+                        request.endTime() != null ? request.endTime() : existingTask.endTime(),
+                        request.memo() != null ? request.memo() : existingTask.memo());
         List<AiGeneratedTaskDto> updatedTasks =
                 generatedTasks.stream()
                         .map(task -> task.tempId().equals(tempId) ? updatedTask : task)

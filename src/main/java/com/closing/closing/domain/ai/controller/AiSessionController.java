@@ -278,7 +278,11 @@ public class AiSessionController {
     }
 
     //임시 일정 수정
-    @Operation(summary = "AI 생성 임시 일정 수정", description = "AI가 생성한 임시 일정 하나를 수정합니다.")
+    @Operation(
+            summary = "AI 생성 임시 일정 수정",
+            description =
+                    "AI가 생성한 임시 일정 하나를 부분 수정합니다. null이 아닌 필드만 반영되며, 누락되었거나"
+                            + " null인 필드는 기존 값이 유지됩니다.")
     @ApiResponses({
         @io.swagger.v3.oas.annotations.responses.ApiResponse(
                 responseCode = "200",
