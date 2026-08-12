@@ -31,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -76,8 +75,8 @@ class ChatRoomServiceTest {
         ChatRoomListProjection extra = createProjection(10L, 100L, 10, "다음", 0L);
 
         given(entityManager.find(User.class, USER_ID)).willReturn(user);
-        given(chatRoomRepository.findChatRooms(
-                eq(USER_ID), isNull(), isNull(), any(Pageable.class)
+        given(chatRoomRepository.findFirstChatRooms(
+                eq(USER_ID), any(Pageable.class)
         )).willReturn(List.of(first, second, extra));
 
         var response = chatRoomService.getChatRooms(USER_ID, request);
@@ -91,10 +90,8 @@ class ChatRoomServiceTest {
         assertThat(response.getPage().getNextCursor())
                 .isEqualTo("2026-07-22T11:00|200");
 
-        verify(chatRoomRepository).findChatRooms(
+        verify(chatRoomRepository).findFirstChatRooms(
                 eq(USER_ID),
-                isNull(),
-                isNull(),
                 org.mockito.ArgumentMatchers.argThat(pageable -> pageable.getPageSize() == 3)
         );
     }
@@ -107,7 +104,7 @@ class ChatRoomServiceTest {
         request.setCursor("2026-07-22T11:00|200");
 
         given(entityManager.find(User.class, USER_ID)).willReturn(user);
-        given(chatRoomRepository.findChatRooms(
+        given(chatRoomRepository.findChatRoomsAfter(
                 eq(USER_ID),
                 eq(LocalDateTime.of(2026, 7, 22, 11, 0)),
                 eq(200L),
@@ -134,8 +131,8 @@ class ChatRoomServiceTest {
                 ErrorCode.INVALID_CURSOR
         );
 
-        verify(chatRoomRepository, never())
-                .findChatRooms(any(), any(), any(), any());
+        verify(chatRoomRepository, never()).findFirstChatRooms(any(), any());
+        verify(chatRoomRepository, never()).findChatRoomsAfter(any(), any(), any(), any());
     }
 
     @Test
@@ -149,8 +146,8 @@ class ChatRoomServiceTest {
                 ErrorCode.USER_NOT_FOUND
         );
 
-        verify(chatRoomRepository, never())
-                .findChatRooms(any(), any(), any(), any());
+        verify(chatRoomRepository, never()).findFirstChatRooms(any(), any());
+        verify(chatRoomRepository, never()).findChatRoomsAfter(any(), any(), any(), any());
     }
 
     private ChatRoomListProjection createProjection(

@@ -116,8 +116,9 @@ public class ChatRoomService {
                 request.getSize() + 1
         );
 
-        List<ChatRoomListProjection> results =
-                chatRoomRepository.findChatRooms(
+        List<ChatRoomListProjection> results = cursor.lastMessageAt() == null
+                ? chatRoomRepository.findFirstChatRooms(userId, pageable)
+                : chatRoomRepository.findChatRoomsAfter(
                         userId,
                         cursor.lastMessageAt(),
                         cursor.lastMessageId(),
