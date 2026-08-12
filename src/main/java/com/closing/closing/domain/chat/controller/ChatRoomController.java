@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @SecurityRequirement(name = "bearerAuth")
-@Tag(name = "10. ChatRoom", description = "중고거래 채팅방 및 메시지 API")
+@Tag(name = "11. ChatRoom", description = "중고거래 채팅방 및 메시지 API")
 @RestController
 @RequestMapping("/api/v1/chat-rooms")
 @RequiredArgsConstructor

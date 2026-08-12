@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Tag(name = "11. Terms", description = "약관 API")
+@Tag(name = "02. Terms", description = "약관 API")
 @RestController
 @RequestMapping("/api/v1/terms")
 @RequiredArgsConstructor

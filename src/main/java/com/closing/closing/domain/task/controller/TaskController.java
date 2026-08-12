@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.YearMonth;
 
-@Tag(name = "05. Task", description = "캘린더 일정 API")
+@Tag(name = "06. Task", description = "캘린더 일정 API")
 @RestController
 @RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor
@@ -23,6 +23,18 @@ import java.time.YearMonth;
 public class TaskController {
 
     private final TaskService taskService;
+
+    /**
+     * 홈 화면 전체 조회
+     */
+    @Operation(summary = "홈 화면 전체 조회", description = "전체 일정의 진행도와 해당 월의 일정 목록을 조회합니다.")
+    @GetMapping("/home")
+    public ApiResponse<TaskResDTO.HomeDTO> getHome(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam("yearMonth") @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth
+    ) {
+        return ApiResponse.onSuccess(taskService.getHome(userId, yearMonth));
+    }
 
     /**
      * 일정 추가
@@ -34,6 +46,32 @@ public class TaskController {
             @Valid @RequestBody TaskReqDTO.CreateTaskDTO request
     ) {
         return ApiResponse.onSuccess(taskService.createTask(userId, request));
+    }
+
+    /**
+     * 일정 상세 조회
+     */
+    @Operation(summary = "일정 상세 조회", description = "일정의 상세 정보를 조회합니다.")
+    @GetMapping("/{taskId}")
+    public ApiResponse<TaskResDTO.TaskDetailDTO> getTask(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("taskId") Long taskId
+    ) {
+        return ApiResponse.onSuccess(taskService.getTask(userId, taskId));
+    }
+
+    /**
+     * 일정 완료 처리
+     */
+    @Operation(summary = "일정 완료 처리", description = "일정의 완료 상태를 변경합니다.")
+    @PatchMapping("/{taskId}/complete")
+    public ApiResponse<TaskResDTO.CompleteTaskResultDTO> completeTask(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("taskId") Long taskId,
+            @Valid @RequestBody TaskReqDTO.CompleteTaskDTO request
+    ) {
+        return ApiResponse.onSuccess(
+                taskService.completeTask(userId, taskId, request));
     }
 
     /**
@@ -64,43 +102,5 @@ public class TaskController {
     ) {
         taskService.deleteTask(userId, taskId);
         return ApiResponse.onSuccess(null);
-    }
-
-    /**
-     * 일정 상세 조회
-     */
-    @Operation(summary = "일정 상세 조회", description = "일정의 상세 정보를 조회합니다.")
-    @GetMapping("/{taskId}")
-    public ApiResponse<TaskResDTO.TaskDetailDTO> getTask(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable("taskId") Long taskId
-    ) {
-        return ApiResponse.onSuccess(taskService.getTask(userId, taskId));
-    }
-
-    /**
-     * 일정 완료 처리
-     */
-    @Operation(summary = "일정 완료 처리", description = "일정의 완료 상태를 변경합니다.")
-    @PatchMapping("/{taskId}/complete")
-    public ApiResponse<TaskResDTO.CompleteTaskResultDTO> completeTask(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable("taskId") Long taskId,
-            @Valid @RequestBody TaskReqDTO.CompleteTaskDTO request
-    ) {
-        return ApiResponse.onSuccess(
-                taskService.completeTask(userId, taskId, request));
-    }
-
-    /**
-     * 홈 화면 전체 조회
-     */
-    @Operation(summary = "홈 화면 전체 조회", description = "전체 일정의 진행도와 해당 월의 일정 목록을 조회합니다.")
-    @GetMapping("/home")
-    public ApiResponse<TaskResDTO.HomeDTO> getHome(
-            @AuthenticationPrincipal Long userId,
-            @RequestParam("yearMonth") @DateTimeFormat(pattern = "yyyy-MM") YearMonth yearMonth
-    ) {
-        return ApiResponse.onSuccess(taskService.getHome(userId, yearMonth));
     }
 }
