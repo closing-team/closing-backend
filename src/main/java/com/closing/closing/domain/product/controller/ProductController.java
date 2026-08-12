@@ -25,7 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @SecurityRequirement(name = "bearerAuth")
-@Tag(name = "09. Product", description = "중고거래 상품 API")
+@Tag(name = "10. Product", description = "중고거래 상품 API")
 @RestController
 @RequestMapping("/api/v1/products")
 @RequiredArgsConstructor
@@ -33,6 +33,63 @@ public class ProductController {
 
     private final ProductService productService;
     private final ProductImageService productImageService;
+
+    // 상품 등록
+    @Operation(
+            summary = "상품 등록",
+            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 등록 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProductCreateResponse> createProduct(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = """
+                            상품 등록 정보 JSON입니다. Content-Type은 application/json입니다.<br><br>
+                            **title** (필수): 상품 제목 / 예시: 업소용 냉장고<br>
+                            **businessCategory** (필수): 업종 카테고리 / 예시: KOREAN_MEAL<br>
+                            **productCategory** (필수): 품목 카테고리 / 예시: REFRIGERATOR_FREEZER<br>
+                            **price** (필수): 상품 가격 / 예시: 350000<br>
+                            **tradeMethods** (필수): 거래 방식 배열 / 예시: [DIRECT, DELIVERY]<br>
+                            **tradeLocation**: 직거래 장소 / 예시: 서울특별시 중구 명동<br>
+                            **latitude**: 직거래 장소 위도 / 예시: 37.5665<br>
+                            **longitude**: 직거래 장소 경도 / 예시: 126.9780<br>
+                            **description** (필수): 상품 상세 설명 / 예시: 정상 작동합니다.<br><br>
+                            DIRECT 거래 시 tradeLocation, latitude, longitude는 필수입니다.
+                            """,
+                    required = true,
+                    schema = @Schema(implementation = ProductCreateRequest.class)
+            )
+            @Valid @RequestPart("request") ProductCreateRequest request,
+            @Parameter(
+                    description = """
+                            등록할 상품 이미지 파일 목록입니다.<br><br>
+                            예시: refrigerator1.jpg, refrigerator2.jpg<br><br>
+                            이미지는 1장 이상 10장 이하로 전달해야 합니다.
+                            """,
+                    required = true,
+                    array = @ArraySchema(
+                            schema = @Schema(
+                                    type = "string",
+                                    format = "binary"
+                            )
+                    )
+            )
+            @RequestPart("images") List<MultipartFile> images
+    ) {
+
+        List<String> imageUrls = productImageService.upload(images);
+
+        ProductCreateResponse response = productService.createProduct(userId, request, imageUrls);
+
+        return ApiResponse.onSuccess(response);
+    }
 
     // 상품 다건 조회
     @Operation(
@@ -212,91 +269,6 @@ public class ProductController {
         return ApiResponse.onSuccess(response);
     }
 
-    // 상품 등록
-    @Operation(
-            summary = "상품 등록",
-            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상품 등록 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<ProductCreateResponse> createProduct(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = """
-                            상품 등록 정보 JSON입니다. Content-Type은 application/json입니다.<br><br>
-                            **title** (필수): 상품 제목 / 예시: 업소용 냉장고<br>
-                            **businessCategory** (필수): 업종 카테고리 / 예시: KOREAN_MEAL<br>
-                            **productCategory** (필수): 품목 카테고리 / 예시: REFRIGERATOR_FREEZER<br>
-                            **price** (필수): 상품 가격 / 예시: 350000<br>
-                            **tradeMethods** (필수): 거래 방식 배열 / 예시: [DIRECT, DELIVERY]<br>
-                            **tradeLocation**: 직거래 장소 / 예시: 서울특별시 중구 명동<br>
-                            **latitude**: 직거래 장소 위도 / 예시: 37.5665<br>
-                            **longitude**: 직거래 장소 경도 / 예시: 126.9780<br>
-                            **description** (필수): 상품 상세 설명 / 예시: 정상 작동합니다.<br><br>
-                            DIRECT 거래 시 tradeLocation, latitude, longitude는 필수입니다.
-                            """,
-                    required = true,
-                    schema = @Schema(implementation = ProductCreateRequest.class)
-            )
-            @Valid @RequestPart("request") ProductCreateRequest request,
-            @Parameter(
-                    description = """
-                            등록할 상품 이미지 파일 목록입니다.<br><br>
-                            예시: refrigerator1.jpg, refrigerator2.jpg<br><br>
-                            이미지는 1장 이상 10장 이하로 전달해야 합니다.
-                            """,
-                    required = true,
-                    array = @ArraySchema(
-                            schema = @Schema(
-                                    type = "string",
-                                    format = "binary"
-                            )
-                    )
-            )
-            @RequestPart("images") List<MultipartFile> images
-    ) {
-
-        List<String> imageUrls = productImageService.upload(images);
-
-        ProductCreateResponse response = productService.createProduct(userId, request, imageUrls);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 상품 삭제
-    @Operation(
-            summary = "상품 삭제",
-            description = "상품 id를 이용해 상품 한 개를 삭제합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상품 삭제 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @DeleteMapping("/{productId}")
-    public ApiResponse<Void> deleteProduct(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "삭제할 상품 ID",
-                    example = "15",
-                    required = true
-            )
-            @PathVariable Long productId
-    ) {
-
-        productService.deleteProduct(productId, userId);
-
-        return ApiResponse.onSuccess(null);
-    }
-
     // 상품 상태 수정
     @Operation(
             summary = "상품 상태 수정",
@@ -354,6 +326,30 @@ public class ProductController {
         return ApiResponse.onSuccess(response);
     }
 
+    // 찜 상품 조회
+    @Operation(
+            summary = "북마크 상품 조회",
+            description = "현재 사용자가 북마크한 상품 목록을 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "북마크 상품 목록 조회 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @GetMapping("/bookmarks")
+    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
+            @AuthenticationPrincipal Long userId,
+            @ParameterObject
+            @Valid @ModelAttribute ProductBookmarkListRequest request
+    ) {
+        ProductListResponse<ProductSummaryResponse, Long> response =
+                productService.getBookmarkedProducts(userId, request);
+
+        return ApiResponse.onSuccess(response);
+    }
+
     // 상품 찜 삭제
     @Operation(
             summary = "상품 북마크 삭제",
@@ -402,30 +398,6 @@ public class ProductController {
     ) {
         MyProductListResponse response =
                 productService.getMyProducts(userId, request);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 찜 상품 조회
-    @Operation(
-            summary = "북마크 상품 조회",
-            description = "현재 사용자가 북마크한 상품 목록을 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "북마크 상품 목록 조회 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @GetMapping("/bookmarks")
-    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
-            @AuthenticationPrincipal Long userId,
-            @ParameterObject
-            @Valid @ModelAttribute ProductBookmarkListRequest request
-    ) {
-        ProductListResponse<ProductSummaryResponse, Long> response =
-                productService.getBookmarkedProducts(userId, request);
 
         return ApiResponse.onSuccess(response);
     }
@@ -492,5 +464,33 @@ public class ProductController {
                 productService.updateProduct(userId, productId, request, newImages);
 
         return ApiResponse.onSuccess(response);
+    }
+
+    // 상품 삭제
+    @Operation(
+            summary = "상품 삭제",
+            description = "상품 id를 이용해 상품 한 개를 삭제합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 삭제 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @DeleteMapping("/{productId}")
+    public ApiResponse<Void> deleteProduct(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "삭제할 상품 ID",
+                    example = "15",
+                    required = true
+            )
+            @PathVariable Long productId
+    ) {
+
+        productService.deleteProduct(productId, userId);
+
+        return ApiResponse.onSuccess(null);
     }
 }

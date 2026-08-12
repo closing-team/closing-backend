@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "07. Support", description = "지원정보 API")
+@Tag(name = "08. Support", description = "지원정보 API")
 @RestController
 @RequestMapping("/api/v1/supports")
 @RequiredArgsConstructor
@@ -25,19 +25,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class SupportController {
 
     private final SupportService supportService;
-
-    /**
-     * 지원정보 상세 조회
-     */
-    @Operation(summary = "지원정보 상세 조회", description = "지원정보의 상세 내용을 조회합니다.")
-    @GetMapping("/{supportId}")
-    public ApiResponse<SupportResDTO.SupportDetailDTO> getSupport(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable("supportId") Long supportId
-    ) {
-        return ApiResponse.onSuccess(
-                supportService.getSupport(userId, supportId));
-    }
 
     /**
      * 지원정보 목록 조회
@@ -57,5 +44,18 @@ public class SupportController {
     ) {
         return ApiResponse.onSuccess(
                 supportService.getSupports(userId, sort, cursor, size));
+    }
+
+    /**
+     * 지원정보 상세 조회
+     */
+    @Operation(summary = "지원정보 상세 조회", description = "지원정보의 상세 내용을 조회합니다.")
+    @GetMapping("/{supportId}")
+    public ApiResponse<SupportResDTO.SupportDetailDTO> getSupport(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("supportId") Long supportId
+    ) {
+        return ApiResponse.onSuccess(
+                supportService.getSupport(userId, supportId));
     }
 }
