@@ -32,3 +32,6 @@ ai:
   server:
     base-url: http://localhost:9999
     timeout-seconds: 1
+
+nts:
+  service-key: test-nts-service-key

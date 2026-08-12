@@ -105,6 +105,113 @@ public class ProductController {
         return ApiResponse.onSuccess(response);
     }
 
+    @Operation(
+            summary = "판매자 활동 지역 수정",
+            description = """
+                    현재 사용자의 중고거래 판매자 활동 지역을 동 단위로 수정합니다.
+                    변경된 지역은 해당 사용자가 판매자로 표시되는 상품 상세 응답의 seller.location에 반영됩니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "판매자 활동 지역 수정 성공",
+                    useReturnTypeSchema = true
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "판매자 활동 지역 형식 오류",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "지역 누락",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "code": "COMMON400",
+                                                      "message": "판매자 활동 지역은 필수입니다."
+                                                    }
+                                                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "잘못된 지역 형식",
+                                            value = """
+                                                    {
+                                                      "success": false,
+                                                      "code": "COMMON400",
+                                                      "message": "동 단위의 지역명을 입력해주세요."
+                                                    }
+                                                    """
+                                    )
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증 필요",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "인증 실패",
+                                    value = """
+                                            {
+                                              "success": false,
+                                              "code": "COMMON401",
+                                              "message": "인증이 필요합니다."
+                                            }
+                                            """
+                            )
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없거나 탈퇴한 사용자",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "사용자 없음",
+                                    value = """
+                                            {
+                                              "success": false,
+                                              "code": "USER404",
+                                              "message": "사용자를 찾을 수 없습니다."
+                                            }
+                                            """
+                            )
+                    )
+            )
+    })
+    @PatchMapping("/me/location")
+    public ApiResponse<SellerLocationResponse> updateSellerLocation(
+            @AuthenticationPrincipal Long userId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "동 단위의 판매자 활동 지역입니다.",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SellerLocationUpdateRequest.class),
+                            examples = @ExampleObject(
+                                    name = "판매자 활동 지역 수정 요청",
+                                    value = """
+                                            {
+                                              "location": "원흥동"
+                                            }
+                                            """
+                            )
+                    )
+            )
+            @Valid @RequestBody SellerLocationUpdateRequest request
+    ) {
+        SellerLocationResponse response =
+                productService.updateSellerLocation(userId, request.getLocation());
+
+        return ApiResponse.onSuccess(response);
+    }
+
     // 상품 등록
     @Operation(
             summary = "상품 등록",
