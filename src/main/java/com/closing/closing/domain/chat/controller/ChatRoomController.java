@@ -70,6 +70,60 @@ public class ChatRoomController {
     }
 
     @Operation(
+            summary = "채팅 메시지 히스토리 조회",
+            description = "채팅방의 메시지를 메시지 ID 커서 기반으로 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "채팅 메시지 히스토리 조회 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @GetMapping("/{chatRoomId}/messages")
+    public ApiResponse<MessageHistoryListResponse<Long>> getMessages(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "메시지 히스토리를 조회할 채팅방 ID",
+                    example = "12",
+                    required = true
+            )
+            @PathVariable("chatRoomId") Long chatRoomId,
+            @ParameterObject
+            @Valid @ModelAttribute MessageHistoryRequest request
+    ) {
+
+        MessageHistoryListResponse<Long> response =
+                chatMessageService.getMessageHistoryList(request, chatRoomId, userId);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "채팅방 목록 조회",
+            description = "현재 사용자가 참여 중인 채팅방을 최근 메시지 순으로 커서 기반 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "채팅방 목록 조회 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @GetMapping
+    public ApiResponse<ChatRoomListResponse<String>> getChatRooms(
+            @AuthenticationPrincipal Long userId,
+            @ParameterObject
+            @Valid @ModelAttribute ChatRoomListRequest request
+    ) {
+
+        ChatRoomListResponse<String> response =
+                chatRoomService.getChatRooms(userId, request);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
             summary = "채팅 메시지 전송",
             description = """
                     채팅방에 텍스트 또는 이미지를 전송합니다.
@@ -177,59 +231,4 @@ public class ChatRoomController {
 
         return ApiResponse.onSuccess(null);
     }
-
-    @Operation(
-            summary = "채팅 메시지 히스토리 조회",
-            description = "채팅방의 메시지를 메시지 ID 커서 기반으로 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "채팅 메시지 히스토리 조회 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @GetMapping("/{chatRoomId}/messages")
-    public ApiResponse<MessageHistoryListResponse<Long>> getMessages(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "메시지 히스토리를 조회할 채팅방 ID",
-                    example = "12",
-                    required = true
-            )
-            @PathVariable("chatRoomId") Long chatRoomId,
-            @ParameterObject
-            @Valid @ModelAttribute MessageHistoryRequest request
-    ) {
-
-        MessageHistoryListResponse<Long> response =
-                chatMessageService.getMessageHistoryList(request, chatRoomId, userId);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    @Operation(
-            summary = "채팅방 목록 조회",
-            description = "현재 사용자가 참여 중인 채팅방을 최근 메시지 순으로 커서 기반 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "채팅방 목록 조회 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @GetMapping
-    public ApiResponse<ChatRoomListResponse<String>> getChatRooms(
-            @AuthenticationPrincipal Long userId,
-            @ParameterObject
-            @Valid @ModelAttribute ChatRoomListRequest request
-    ) {
-
-        ChatRoomListResponse<String> response =
-                chatRoomService.getChatRooms(userId, request);
-
-        return ApiResponse.onSuccess(response);
-    }
-
 }

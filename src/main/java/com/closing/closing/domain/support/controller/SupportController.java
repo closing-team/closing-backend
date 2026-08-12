@@ -26,22 +26,6 @@ public class SupportController {
 
     private final SupportService supportService;
 
-    /**
-     * 지원정보 상세 조회
-     */
-    @Operation(summary = "지원정보 상세 조회", description = "지원정보의 상세 내용을 조회합니다.")
-    @GetMapping("/{supportId}")
-    public ApiResponse<SupportResDTO.SupportDetailDTO> getSupport(
-            @AuthenticationPrincipal Long userId,
-            @PathVariable("supportId") Long supportId
-    ) {
-        return ApiResponse.onSuccess(
-                supportService.getSupport(userId, supportId));
-    }
-
-    /**
-     * 지원정보 목록 조회
-     */
     @Operation(summary = "지원정보 목록 조회", description = "지원정보 목록을 커서 기반으로 조회합니다.")
     @GetMapping
     public ApiResponse<SupportResDTO.SupportListDTO> getSupports(
@@ -57,5 +41,15 @@ public class SupportController {
     ) {
         return ApiResponse.onSuccess(
                 supportService.getSupports(userId, sort, cursor, size));
+    }
+
+    @Operation(summary = "지원정보 상세 조회", description = "지원정보의 상세 내용을 조회합니다.")
+    @GetMapping("/{supportId}")
+    public ApiResponse<SupportResDTO.SupportDetailDTO> getSupport(
+            @AuthenticationPrincipal Long userId,
+            @PathVariable("supportId") Long supportId
+    ) {
+        return ApiResponse.onSuccess(
+                supportService.getSupport(userId, supportId));
     }
 }

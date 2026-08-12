@@ -31,6 +31,23 @@ public class BookmarkController {
 
     private final BookmarkService bookmarkService;
 
+    @Operation(summary = "북마크 목록 조회", description = "등록한 지원정보 북마크 목록을 조회합니다.")
+    @GetMapping
+    public ApiResponse<BookmarkResDTO.BookmarkListDTO> getBookmarks(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "북마크 정렬 기준",
+                    schema = @Schema(
+                            implementation = BookmarkSort.class,
+                            defaultValue = "LATEST"))
+            @RequestParam(value = "sort", defaultValue = "LATEST") String sort,
+            @RequestParam(value = "cursor", required = false) String cursor,
+            @RequestParam(value = "size", defaultValue = "20") String size
+    ) {
+        return ApiResponse.onSuccess(
+                bookmarkService.getBookmarks(userId, sort, cursor, size));
+    }
+
     @Operation(summary = "북마크 추가", description = "지원정보를 북마크에 추가합니다.")
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ApiResponse<BookmarkResDTO.BookmarkCreateDTO> createBookmark(
@@ -49,22 +66,5 @@ public class BookmarkController {
     ) {
         bookmarkService.deleteBookmark(userId, supportId);
         return ApiResponse.onSuccess(null);
-    }
-
-    @Operation(summary = "북마크 목록 조회", description = "등록한 지원정보 북마크 목록을 조회합니다.")
-    @GetMapping
-    public ApiResponse<BookmarkResDTO.BookmarkListDTO> getBookmarks(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "북마크 정렬 기준",
-                    schema = @Schema(
-                            implementation = BookmarkSort.class,
-                            defaultValue = "LATEST"))
-            @RequestParam(value = "sort", defaultValue = "LATEST") String sort,
-            @RequestParam(value = "cursor", required = false) String cursor,
-            @RequestParam(value = "size", defaultValue = "20") String size
-    ) {
-        return ApiResponse.onSuccess(
-                bookmarkService.getBookmarks(userId, sort, cursor, size));
     }
 }

@@ -34,7 +34,6 @@ public class ProductController {
     private final ProductService productService;
     private final ProductImageService productImageService;
 
-    // 상품 다건 조회
     @Operation(
             summary = "상품 목록 조회",
             description = "검색어, 카테고리, 거래 방식, 정렬 조건을 적용하여 상품 목록을 커서 기반으로 조회합니다."
@@ -58,54 +57,6 @@ public class ProductController {
         return ApiResponse.onSuccess(response);
     }
 
-    // 상품 조회
-    @Operation(
-            summary = "상품 상세 조회",
-            description = "상품 ID에 해당하는 상품의 상세 정보를 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상품 상세 조회 성공",
-                    useReturnTypeSchema = true
-            ),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "404",
-                    description = "상품을 찾을 수 없음",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponse.class),
-                            examples = @ExampleObject(
-                                    name = "상품 없음",
-                                    value = """
-                                        {
-                                          "success": false,
-                                          "code": "PRODUCT404",
-                                          "message": "상품을 찾을 수 없습니다."
-                                        }
-                                        """
-                            )
-                    )
-            )
-    })
-    @GetMapping("/{productId}")
-    public ApiResponse<ProductResponse> getProduct(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "조회할 상품 ID",
-                    example = "15",
-                    required = true
-            )
-            @PathVariable("productId") Long productId,
-            @ParameterObject
-            @Valid @ModelAttribute ProductRequest request
-    ) {
-        ProductResponse response = productService.getProduct(productId, userId, request);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 상품 등록
     @Operation(
             summary = "상품 등록",
             description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다."
@@ -162,168 +113,52 @@ public class ProductController {
         return ApiResponse.onSuccess(response);
     }
 
-    // 상품 삭제
     @Operation(
-            summary = "상품 삭제",
-            description = "상품 id를 이용해 상품 한 개를 삭제합니다."
+            summary = "상품 상세 조회",
+            description = "상품 ID에 해당하는 상품의 상세 정보를 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "상품 삭제 성공",
+                    description = "상품 상세 조회 성공",
                     useReturnTypeSchema = true
-            )
-    })
-    @DeleteMapping("/{productId}")
-    public ApiResponse<Void> deleteProduct(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "삭제할 상품 ID",
-                    example = "15",
-                    required = true
-            )
-            @PathVariable Long productId
-    ) {
-
-        productService.deleteProduct(productId, userId);
-
-        return ApiResponse.onSuccess(null);
-    }
-
-    // 상품 상태 수정
-    @Operation(
-            summary = "상품 상태 수정",
-            description = "상품 id를 이용해 상품 한 개의 상태를 수정합니다. (SELLING, RESERVED, SOLD_OUT)"
-    )
-    @ApiResponses({
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상품 상태 수정 성공",
-                    useReturnTypeSchema = true
+                    responseCode = "404",
+                    description = "상품을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponse.class),
+                            examples = @ExampleObject(
+                                    name = "상품 없음",
+                                    value = """
+                                        {
+                                          "success": false,
+                                          "code": "PRODUCT404",
+                                          "message": "상품을 찾을 수 없습니다."
+                                        }
+                                        """
+                            )
+                    )
             )
     })
-    @PatchMapping("/{productId}/status")
-    public ApiResponse<ProductStatusResponse> updateProductStatus(
+    @GetMapping("/{productId}")
+    public ApiResponse<ProductResponse> getProduct(
             @AuthenticationPrincipal Long userId,
             @Parameter(
-                    description = "상태 수정할 상품 ID",
+                    description = "조회할 상품 ID",
                     example = "15",
                     required = true
             )
             @PathVariable("productId") Long productId,
-            @Valid @RequestBody ProductStatusRequest request
-    ) {
-
-        ProductStatusResponse response = productService.updateProductStatus(userId, productId, request.getStatus());
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 상품 찜 추가
-    @Operation(
-            summary = "상품 북마크 추가",
-            description = "상품 id를 이용해 상품을 북마크 목록에 추가합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상품 북마크 추가 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @PostMapping("/{productId}/bookmark")
-    public ApiResponse<ProductBookmarkResponse> createBookmark(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "북마크 추가할 상품 ID",
-                    example = "15",
-                    required = true
-            )
-            @PathVariable("productId") Long productId
-    ) {
-
-        ProductBookmarkResponse response = productService.createProductBookmark(userId, productId);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 상품 찜 삭제
-    @Operation(
-            summary = "상품 북마크 삭제",
-            description = "상품 id를 이용해 상품을 북마크 목록에서 삭제합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "상품 북마크 삭제 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @DeleteMapping("/{productId}/bookmark")
-    public ApiResponse<ProductBookmarkResponse> deleteBookmark(
-            @AuthenticationPrincipal Long userId,
-            @Parameter(
-                    description = "북마크 삭제할 상품 ID",
-                    example = "15",
-                    required = true
-            )
-            @PathVariable("productId") Long productId
-    ) {
-
-        ProductBookmarkResponse response = productService.deleteProductBookmark(userId, productId);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 내 상품 조회
-    @Operation(
-            summary = "내 상품 조회",
-            description = "현재 사용자가 등록한 상품 목록을 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "내 상품 목록 조회 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @GetMapping("/me")
-    public ApiResponse<MyProductListResponse> getMyProducts(
-            @AuthenticationPrincipal Long userId,
             @ParameterObject
-            @Valid @ModelAttribute MyProductListRequest request
+            @Valid @ModelAttribute ProductRequest request
     ) {
-        MyProductListResponse response =
-                productService.getMyProducts(userId, request);
+        ProductResponse response = productService.getProduct(productId, userId, request);
 
         return ApiResponse.onSuccess(response);
     }
 
-    // 찜 상품 조회
-    @Operation(
-            summary = "북마크 상품 조회",
-            description = "현재 사용자가 북마크한 상품 목록을 조회합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "북마크 상품 목록 조회 성공",
-                    useReturnTypeSchema = true
-            )
-    })
-    @GetMapping("/bookmarks")
-    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
-            @AuthenticationPrincipal Long userId,
-            @ParameterObject
-            @Valid @ModelAttribute ProductBookmarkListRequest request
-    ) {
-        ProductListResponse<ProductSummaryResponse, Long> response =
-                productService.getBookmarkedProducts(userId, request);
-
-        return ApiResponse.onSuccess(response);
-    }
-
-    // 상품 수정
     @Operation(
             summary = "상품 수정",
             description = "상품 정보를 request JSON 파트로, 새 이미지를 newImages 파일 파트로 전달합니다."
@@ -385,5 +220,160 @@ public class ProductController {
                 productService.updateProduct(userId, productId, request, newImages);
 
         return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "상품 상태 수정",
+            description = "상품 id를 이용해 상품 한 개의 상태를 수정합니다. (SELLING, RESERVED, SOLD_OUT)"
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 상태 수정 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @PatchMapping("/{productId}/status")
+    public ApiResponse<ProductStatusResponse> updateProductStatus(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "상태 수정할 상품 ID",
+                    example = "15",
+                    required = true
+            )
+            @PathVariable("productId") Long productId,
+            @Valid @RequestBody ProductStatusRequest request
+    ) {
+
+        ProductStatusResponse response = productService.updateProductStatus(userId, productId, request.getStatus());
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "내 상품 조회",
+            description = "현재 사용자가 등록한 상품 목록을 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "내 상품 목록 조회 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @GetMapping("/me")
+    public ApiResponse<MyProductListResponse> getMyProducts(
+            @AuthenticationPrincipal Long userId,
+            @ParameterObject
+            @Valid @ModelAttribute MyProductListRequest request
+    ) {
+        MyProductListResponse response =
+                productService.getMyProducts(userId, request);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "상품 북마크 추가",
+            description = "상품 id를 이용해 상품을 북마크 목록에 추가합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 북마크 추가 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @PostMapping("/{productId}/bookmark")
+    public ApiResponse<ProductBookmarkResponse> createBookmark(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "북마크 추가할 상품 ID",
+                    example = "15",
+                    required = true
+            )
+            @PathVariable("productId") Long productId
+    ) {
+
+        ProductBookmarkResponse response = productService.createProductBookmark(userId, productId);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "북마크 상품 조회",
+            description = "현재 사용자가 북마크한 상품 목록을 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "북마크 상품 목록 조회 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @GetMapping("/bookmarks")
+    public ApiResponse<ProductListResponse<ProductSummaryResponse, Long>> getBookmarks(
+            @AuthenticationPrincipal Long userId,
+            @ParameterObject
+            @Valid @ModelAttribute ProductBookmarkListRequest request
+    ) {
+        ProductListResponse<ProductSummaryResponse, Long> response =
+                productService.getBookmarkedProducts(userId, request);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "상품 북마크 삭제",
+            description = "상품 id를 이용해 상품을 북마크 목록에서 삭제합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 북마크 삭제 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @DeleteMapping("/{productId}/bookmark")
+    public ApiResponse<ProductBookmarkResponse> deleteBookmark(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "북마크 삭제할 상품 ID",
+                    example = "15",
+                    required = true
+            )
+            @PathVariable("productId") Long productId
+    ) {
+
+        ProductBookmarkResponse response = productService.deleteProductBookmark(userId, productId);
+
+        return ApiResponse.onSuccess(response);
+    }
+
+    @Operation(
+            summary = "상품 삭제",
+            description = "상품 id를 이용해 상품 한 개를 삭제합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "상품 삭제 성공",
+                    useReturnTypeSchema = true
+            )
+    })
+    @DeleteMapping("/{productId}")
+    public ApiResponse<Void> deleteProduct(
+            @AuthenticationPrincipal Long userId,
+            @Parameter(
+                    description = "삭제할 상품 ID",
+                    example = "15",
+                    required = true
+            )
+            @PathVariable Long productId
+    ) {
+
+        productService.deleteProduct(productId, userId);
+
+        return ApiResponse.onSuccess(null);
     }
 }
