@@ -44,13 +44,13 @@ public class ProductCreateRequest {
     private ProductCategory productCategory;
 
     @Schema(
-            description = "상품 가격(원)",
+            description = "상품 가격(원). 0원은 나눔 상품입니다.",
             example = "350000",
-            minimum = "1",
+            minimum = "0",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotNull(message = "가격은 필수입니다.")
-    @Positive(message = "가격은 양수여야 합니다.")
+    @PositiveOrZero(message = "가격은 0원 이상이어야 합니다.")
     private Integer price;
 
     @Schema(

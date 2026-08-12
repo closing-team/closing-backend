@@ -43,13 +43,13 @@ public class ProductUpdateRequest {
     private ProductCategory productCategory;
 
     @Schema(
-            description = "수정 후 상품 가격(원)",
+            description = "수정 후 상품 가격(원). 0원은 나눔 상품입니다.",
             example = "300000",
-            minimum = "1",
+            minimum = "0",
             requiredMode = Schema.RequiredMode.REQUIRED
     )
     @NotNull(message = "상품 가격은 필수입니다.")
-    @Positive(message = "상품 가격은 양수여야 합니다.")
+    @PositiveOrZero(message = "상품 가격은 0원 이상이어야 합니다.")
     private Integer price;
 
     @Schema(
