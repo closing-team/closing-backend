@@ -16,6 +16,7 @@ spring:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+    tags-sorter: alpha
 
 kakao:
   client-id: ${KAKAO_CLIENT_ID:3d2955d69f70ccce2390d291d6e8202e}

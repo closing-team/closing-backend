@@ -13,7 +13,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "User", description = "사용자 API")
+@Tag(name = "02. User", description = "사용자 API")
 @RestController
 @RequestMapping("/api/v1/users")
 @RequiredArgsConstructor

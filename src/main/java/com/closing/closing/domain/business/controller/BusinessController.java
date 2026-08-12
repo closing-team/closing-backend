@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Business", description = "사업자 인증 API")
+@Tag(name = "03. Business", description = "사업자 인증 API")
 @RestController
 @RequestMapping("/api/v1/businesses")
 @RequiredArgsConstructor
