@@ -76,6 +76,10 @@ public enum ErrorCode {
             HttpStatus.BAD_GATEWAY,
             "SUPPORT502",
             "기업마당 API 호출에 실패했습니다."),
+    SUPPORT_SYNC_IN_PROGRESS(
+            HttpStatus.SERVICE_UNAVAILABLE,
+            "SUPPORT503",
+            "지원정보를 불러오는 중입니다. 잠시 후 다시 시도해 주세요."),
 
     // 사업자 인증 에러코드
     BUSINESS_MISMATCH(HttpStatus.BAD_REQUEST, "BUSINESS_MISMATCH400", "사업자 정보가 국세청 조회 결과와 일치하지 않습니다."),

@@ -5,6 +5,7 @@ import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
 import com.closing.closing.domain.support.enums.SupportSort;
+import com.closing.closing.domain.support.state.SupportSyncState;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class SupportService {
 
     private final SupportRepository supportRepository;
     private final BookmarkRepository bookmarkRepository;
+    private final SupportSyncState supportSyncState;
 
     @Transactional
     public SupportResDTO.SupportDetailDTO getSupport(
@@ -56,6 +58,7 @@ public class SupportService {
         SupportSort sort = SupportSort.from(sortValue);
         int size = parseSize(sizeValue);
         SupportCursor cursor = parseCursor(sort, cursorValue);
+        validateSupportAvailability();
         Pageable pageable = PageRequest.of(0, size + 1);
 
         List<SupportInfo> result = findSupports(sort, cursor, pageable);
@@ -80,6 +83,19 @@ public class SupportService {
                         .hasNext(hasNext)
                         .build())
                 .build();
+    }
+
+    private void validateSupportAvailability() {
+        if (supportSyncState.isInitialSyncCompleted()
+                || supportRepository.count() > 0) {
+            return;
+        }
+
+        ErrorCode latestFailure = supportSyncState.getLatestFailure();
+        if (latestFailure != null) {
+            throw new CustomException(latestFailure);
+        }
+        throw new CustomException(ErrorCode.SUPPORT_SYNC_IN_PROGRESS);
     }
 
     private Set<Long> findBookmarkedSupportIds(
