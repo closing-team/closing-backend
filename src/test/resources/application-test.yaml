@@ -35,3 +35,7 @@ ai:
 
 nts:
   service-key: test-nts-service-key
+
+support:
+  sync:
+    enabled: false

@@ -5,8 +5,10 @@ import com.closing.closing.domain.support.entity.SupportInfo;
 import com.closing.closing.domain.support.entity.SupportStatus;
 import com.closing.closing.domain.support.repository.BookmarkRepository;
 import com.closing.closing.domain.support.repository.SupportRepository;
+import com.closing.closing.domain.support.state.SupportSyncState;
 import com.closing.closing.global.exception.CustomException;
 import com.closing.closing.global.exception.ErrorCode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,8 +44,17 @@ class SupportServiceTest {
     @Mock
     private BookmarkRepository bookmarkRepository;
 
+    @Mock
+    private SupportSyncState supportSyncState;
+
     @InjectMocks
     private SupportService supportService;
+
+    @BeforeEach
+    void setUp() {
+        lenient().when(supportSyncState.isInitialSyncCompleted())
+                .thenReturn(true);
+    }
 
     @Test
     @DisplayName("지원정보 상세 조회 성공 및 조회수 증가")
@@ -167,6 +179,81 @@ class SupportServiceTest {
         // then
         verify(supportRepository).findAllByPopular(
                 1520, 1L, PageRequest.of(0, 21));
+    }
+
+    @Test
+    @DisplayName("빈 DB에서 최초 동기화 중이면 SUPPORT503 예외 발생")
+    void getSupports_Fail_WhenInitialSyncIsInProgressAndDatabaseIsEmpty() {
+        // given
+        when(supportSyncState.isInitialSyncCompleted()).thenReturn(false);
+        when(supportRepository.count()).thenReturn(0L);
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> supportService.getSupports(
+                        USER_ID, "POPULAR", null, "20"));
+
+        assertEquals(
+                ErrorCode.SUPPORT_SYNC_IN_PROGRESS,
+                exception.getErrorCode());
+        verify(supportRepository, never()).findAllByPopular(
+                null, null, PageRequest.of(0, 21));
+    }
+
+    @Test
+    @DisplayName("빈 DB에서 최초 동기화가 실패하면 실제 실패 원인 반환")
+    void getSupports_Fail_WithSyncFailureCauseWhenDatabaseIsEmpty() {
+        // given
+        when(supportSyncState.isInitialSyncCompleted()).thenReturn(false);
+        when(supportSyncState.getLatestFailure())
+                .thenReturn(ErrorCode.SUPPORT_API_KEY_NOT_FOUND);
+        when(supportRepository.count()).thenReturn(0L);
+
+        // when & then
+        CustomException exception = assertThrows(CustomException.class,
+                () -> supportService.getSupports(
+                        USER_ID, "POPULAR", null, "20"));
+
+        assertEquals(
+                ErrorCode.SUPPORT_API_KEY_NOT_FOUND,
+                exception.getErrorCode());
+    }
+
+    @Test
+    @DisplayName("기존 지원정보가 있으면 최초 동기화 중에도 목록 제공")
+    void getSupports_Success_WhenExistingDataIsAvailableDuringInitialSync() {
+        // given
+        when(supportSyncState.isInitialSyncCompleted()).thenReturn(false);
+        when(supportRepository.count()).thenReturn(1L);
+        when(supportRepository.findAllByPopular(
+                null, null, PageRequest.of(0, 21)))
+                .thenReturn(List.of());
+
+        // when
+        SupportResDTO.SupportListDTO result = supportService.getSupports(
+                USER_ID, "POPULAR", null, "20");
+
+        // then
+        assertTrue(result.supports().isEmpty());
+        verify(supportRepository).findAllByPopular(
+                null, null, PageRequest.of(0, 21));
+    }
+
+    @Test
+    @DisplayName("최초 동기화 성공 후 결과가 0건이면 빈 목록 제공")
+    void getSupports_Success_WithEmptyResultAfterInitialSyncCompleted() {
+        // given
+        when(supportRepository.findAllByPopular(
+                null, null, PageRequest.of(0, 21)))
+                .thenReturn(List.of());
+
+        // when
+        SupportResDTO.SupportListDTO result = supportService.getSupports(
+                USER_ID, "POPULAR", null, "20");
+
+        // then
+        assertTrue(result.supports().isEmpty());
+        verify(supportRepository, never()).count();
     }
 
     @Test
