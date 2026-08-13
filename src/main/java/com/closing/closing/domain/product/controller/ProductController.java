@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -37,7 +38,17 @@ public class ProductController {
     // 상품 등록
     @Operation(
             summary = "상품 등록",
-            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다."
+            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            encoding = @Encoding(
+                                    name = "request",
+                                    contentType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            )
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

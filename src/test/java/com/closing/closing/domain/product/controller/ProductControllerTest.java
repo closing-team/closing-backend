@@ -236,6 +236,33 @@ class ProductControllerTest {
     }
 
     @Test
+    @DisplayName("상품 등록 JSON 파트의 Content-Type이 올바르지 않으면 415를 반환한다")
+    void createProduct_rejectsUnsupportedRequestPartContentType() throws Exception {
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                "{}".getBytes()
+        );
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "images",
+                "chair.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[]{1, 2, 3}
+        );
+
+        mockMvc.perform(multipart("/api/v1/products")
+                        .file(requestPart)
+                        .file(imagePart))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("COMMON415"))
+                .andExpect(jsonPath("$.message").value("지원하지 않는 Content-Type입니다."));
+
+        verify(productImageService, never()).upload(anyList());
+        verify(productService, never()).createProduct(anyLong(), any(), anyList());
+    }
+
+    @Test
     @DisplayName("DELETE /api/v1/products/{id} 요청으로 상품을 삭제한다")
     void deleteProduct_success() throws Exception {
         // 상품 삭제 endpoint와 빈 성공 응답을 검증한다.
