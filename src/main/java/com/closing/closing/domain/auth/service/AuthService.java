@@ -96,8 +96,8 @@ public class AuthService {
         }
 
         Long userId = jwtProvider.getUserId(token);
-        userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+        userRepository.findByIdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new CustomException(ErrorCode.AUTH_REFRESH_TOKEN_INVALID));
 
         return TokenRefreshResponse.builder()
                 .accessToken(jwtProvider.createAccessToken(userId))
