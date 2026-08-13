@@ -103,8 +103,10 @@ public class SupportService {
         return switch (sort) {
             case POPULAR -> supportRepository.findAllByPopular(
                     cursor.viewCount(), cursor.supportId(), pageable);
-            case LATEST -> supportRepository.findAllByLatest(
-                    cursor.createdAt(), cursor.supportId(), pageable);
+            case LATEST -> cursor.createdAt() == null
+                    ? supportRepository.findAllByLatest(pageable)
+                    : supportRepository.findAllByLatestAfterCursor(
+                            cursor.createdAt(), cursor.supportId(), pageable);
             case DEADLINE -> supportRepository.findAllByDeadline(
                     cursor.applyEndDate(), cursor.supportId(), LAST_END_DATE, pageable);
         };

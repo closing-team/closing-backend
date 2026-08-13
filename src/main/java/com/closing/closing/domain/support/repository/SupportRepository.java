@@ -90,12 +90,17 @@ public interface SupportRepository extends JpaRepository<SupportInfo, Long> {
 
     @Query("""
             SELECT s FROM SupportInfo s
-            WHERE (:cursorCreatedAt IS NULL
-                OR s.createdAt < :cursorCreatedAt
+            ORDER BY s.createdAt DESC, s.id DESC
+            """)
+    List<SupportInfo> findAllByLatest(Pageable pageable);
+
+    @Query("""
+            SELECT s FROM SupportInfo s
+            WHERE (s.createdAt < :cursorCreatedAt
                 OR (s.createdAt = :cursorCreatedAt AND s.id < :cursorId))
             ORDER BY s.createdAt DESC, s.id DESC
             """)
-    List<SupportInfo> findAllByLatest(
+    List<SupportInfo> findAllByLatestAfterCursor(
             @Param("cursorCreatedAt") LocalDateTime cursorCreatedAt,
             @Param("cursorId") Long cursorId,
             Pageable pageable);
