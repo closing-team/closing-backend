@@ -38,6 +38,8 @@ out/
 
 ### 민감 파일 ###
 **/.env
+**/application-local.yaml
+**/application-local.yml
 ### Local AI coding assistants ###
 .codex/
 .omx/
