@@ -17,6 +17,7 @@ import org.springframework.data.domain.PageRequest;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -167,6 +169,41 @@ class SupportServiceTest {
         // then
         verify(supportRepository).findAllByPopular(
                 1520, 1L, PageRequest.of(0, 21));
+    }
+
+    @Test
+    @DisplayName("최신순 첫 페이지 조회 시 커서 없는 쿼리 사용")
+    void getSupports_Success_OrderByLatestWithoutCursor() {
+        // given
+        when(supportRepository.findAllByLatest(PageRequest.of(0, 21)))
+                .thenReturn(List.of());
+
+        // when
+        supportService.getSupports(USER_ID, "LATEST", null, "20");
+
+        // then
+        verify(supportRepository).findAllByLatest(PageRequest.of(0, 21));
+        verify(supportRepository, never()).findAllByLatestAfterCursor(
+                any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("최신순 다음 페이지 조회 시 생성일시 커서 쿼리 사용")
+    void getSupports_Success_OrderByLatestWithCursor() {
+        // given
+        LocalDateTime createdAt = LocalDateTime.of(2026, 8, 1, 13, 54, 14);
+        when(supportRepository.findAllByLatestAfterCursor(
+                createdAt, 14L, PageRequest.of(0, 21)))
+                .thenReturn(List.of());
+
+        // when
+        supportService.getSupports(
+                USER_ID, "LATEST", "2026-08-01T13:54:14_14", "20");
+
+        // then
+        verify(supportRepository).findAllByLatestAfterCursor(
+                createdAt, 14L, PageRequest.of(0, 21));
+        verify(supportRepository, never()).findAllByLatest(any());
     }
 
     @Test
