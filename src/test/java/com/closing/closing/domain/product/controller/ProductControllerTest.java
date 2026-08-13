@@ -155,7 +155,7 @@ class ProductControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/products multipart 요청으로 상품을 등록한다")
+    @DisplayName("POST /api/v1/products multipart 요청으로 0원 나눔 상품을 등록한다")
     void createProduct_success() throws Exception {
         // 상품 JSON과 이미지 파일 파트가 각각 처리되는지 검증한다.
         String requestJson = """
@@ -163,7 +163,7 @@ class ProductControllerTest {
                   "title":"중고 의자",
                   "businessCategory":"KOREAN_MEAL",
                   "productCategory":"CHAIR_SOFA_BAR_CHAIR",
-                  "price":100000,
+                  "price":0,
                   "tradeMethods":["DIRECT"],
                   "tradeLocation":"서울시 중구",
                   "description":"상태가 좋습니다.",
@@ -194,6 +194,72 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.data.imageUrls[0]").value("uploaded.jpg"));
 
         verify(productImageService).upload(argThat(images -> images.size() == 1));
+        verify(productService).createProduct(
+                eq(AUTHENTICATED_USER_ID),
+                argThat(request -> request.getPrice() == 0),
+                eq(List.of("uploaded.jpg"))
+        );
+    }
+
+    @Test
+    @DisplayName("상품 등록 가격은 음수일 수 없다")
+    void createProduct_rejectsNegativePrice() throws Exception {
+        String requestJson = """
+                {
+                  "title":"중고 의자",
+                  "businessCategory":"KOREAN_MEAL",
+                  "productCategory":"CHAIR_SOFA_BAR_CHAIR",
+                  "price":-1,
+                  "tradeMethods":["DIRECT"],
+                  "tradeLocation":"서울시 중구",
+                  "description":"상태가 좋습니다.",
+                  "latitude":37.5665,
+                  "longitude":126.9780
+                }
+                """;
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request", "", MediaType.APPLICATION_JSON_VALUE, requestJson.getBytes()
+        );
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "images", "chair.jpg", MediaType.IMAGE_JPEG_VALUE, new byte[]{1, 2, 3}
+        );
+
+        mockMvc.perform(multipart("/api/v1/products")
+                        .file(requestPart)
+                        .file(imagePart))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON400"))
+                .andExpect(jsonPath("$.message").value("가격은 0원 이상이어야 합니다."));
+
+        verify(productImageService, never()).upload(anyList());
+        verify(productService, never()).createProduct(anyLong(), any(), anyList());
+    }
+
+    @Test
+    @DisplayName("상품 등록 JSON 파트의 Content-Type이 올바르지 않으면 415를 반환한다")
+    void createProduct_rejectsUnsupportedRequestPartContentType() throws Exception {
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_OCTET_STREAM_VALUE,
+                "{}".getBytes()
+        );
+        MockMultipartFile imagePart = new MockMultipartFile(
+                "images",
+                "chair.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                new byte[]{1, 2, 3}
+        );
+
+        mockMvc.perform(multipart("/api/v1/products")
+                        .file(requestPart)
+                        .file(imagePart))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("COMMON415"))
+                .andExpect(jsonPath("$.message").value("지원하지 않는 Content-Type입니다."));
+
+        verify(productImageService, never()).upload(anyList());
+        verify(productService, never()).createProduct(anyLong(), any(), anyList());
     }
 
     @Test
@@ -294,7 +360,7 @@ class ProductControllerTest {
         request.setTitle("수정된 의자");
         request.setBusinessCategory(com.closing.closing.domain.product.entity.BusinessCategory.KOREAN_MEAL);
         request.setProductCategory(com.closing.closing.domain.product.entity.ProductCategory.CHAIR_SOFA_BAR_CHAIR);
-        request.setPrice(120_000);
+        request.setPrice(0);
         request.setTradeMethods(List.of(com.closing.closing.domain.product.entity.TradeMethod.DIRECT));
         request.setTradeLocation("서울시 종로구");
         request.setLatitude(new BigDecimal("37.5700"));
@@ -311,7 +377,7 @@ class ProductControllerTest {
         given(productService.updateProduct(eq(AUTHENTICATED_USER_ID), eq(10L),
                 any(ProductUpdateRequest.class), anyList()))
                 .willReturn(new ProductUpdateResponse(
-                        10L, "수정된 의자", 120_000,
+                        10L, "수정된 의자", 0,
                         request.getTradeMethods(), "서울시 종로구",
                         request.getLatitude(), request.getLongitude(), ProductStatus.SELLING,
                         List.of("keep.jpg", "new.jpg"), LocalDateTime.of(2026, 7, 21, 12, 0)
@@ -326,6 +392,14 @@ class ProductControllerTest {
                         }))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.title").value("수정된 의자"))
+                .andExpect(jsonPath("$.data.price").value(0))
                 .andExpect(jsonPath("$.data.imageUrls.length()").value(2));
+
+        verify(productService).updateProduct(
+                eq(AUTHENTICATED_USER_ID),
+                eq(10L),
+                argThat(updateRequest -> updateRequest.getPrice() == 0),
+                anyList()
+        );
     }
 }

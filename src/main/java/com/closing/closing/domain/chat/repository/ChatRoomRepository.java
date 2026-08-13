@@ -34,9 +34,33 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
                   FROM ChatMessage message
                   WHERE message.chatRoom = chatRoom
               )
+            GROUP BY chatRoom, lastMessage
+            ORDER BY lastMessage.createdAt DESC, lastMessage.id DESC
+            """)
+    List<ChatRoomListProjection> findFirstChatRooms(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT chatRoom AS chatRoom,
+                   lastMessage AS lastMessage,
+                   COUNT(unreadMessage.id) AS unreadMessageCount
+            FROM ChatRoom chatRoom
+            JOIN ChatMessage lastMessage
+              ON lastMessage.chatRoom = chatRoom
+            LEFT JOIN ChatMessage unreadMessage
+              ON unreadMessage.chatRoom = chatRoom
+             AND unreadMessage.sender.id <> :userId
+             AND unreadMessage.isRead = false
+            WHERE (chatRoom.buyer.id = :userId OR chatRoom.seller.id = :userId)
+              AND lastMessage.id = (
+                  SELECT MAX(message.id)
+                  FROM ChatMessage message
+                  WHERE message.chatRoom = chatRoom
+              )
               AND (
-                  :cursorLastMessageAt IS NULL
-                  OR lastMessage.createdAt < :cursorLastMessageAt
+                  lastMessage.createdAt < :cursorLastMessageAt
                   OR (
                       lastMessage.createdAt = :cursorLastMessageAt
                       AND lastMessage.id < :cursorLastMessageId
@@ -45,7 +69,7 @@ public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
             GROUP BY chatRoom, lastMessage
             ORDER BY lastMessage.createdAt DESC, lastMessage.id DESC
             """)
-    List<ChatRoomListProjection> findChatRooms(
+    List<ChatRoomListProjection> findChatRoomsAfter(
             @Param("userId") Long userId,
             @Param("cursorLastMessageAt") LocalDateTime cursorLastMessageAt,
             @Param("cursorLastMessageId") Long cursorLastMessageId,

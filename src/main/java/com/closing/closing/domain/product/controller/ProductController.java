@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Encoding;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -37,7 +38,17 @@ public class ProductController {
     // 상품 등록
     @Operation(
             summary = "상품 등록",
-            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다."
+            description = "상품 정보를 request JSON 파트로, 상품 이미지를 images 파일 파트로 전달합니다.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                            encoding = @Encoding(
+                                    name = "request",
+                                    contentType = MediaType.APPLICATION_JSON_VALUE
+                            )
+                    )
+            )
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -55,7 +66,7 @@ public class ProductController {
                             **title** (필수): 상품 제목 / 예시: 업소용 냉장고<br>
                             **businessCategory** (필수): 업종 카테고리 / 예시: KOREAN_MEAL<br>
                             **productCategory** (필수): 품목 카테고리 / 예시: REFRIGERATOR_FREEZER<br>
-                            **price** (필수): 상품 가격 / 예시: 350000<br>
+                            **price** (필수): 상품 가격(0원은 나눔) / 예시: 350000<br>
                             **tradeMethods** (필수): 거래 방식 배열 / 예시: [DIRECT, DELIVERY]<br>
                             **tradeLocation**: 직거래 장소 / 예시: 서울특별시 중구 명동<br>
                             **latitude**: 직거래 장소 위도 / 예시: 37.5665<br>
@@ -430,7 +441,7 @@ public class ProductController {
                             **title** (필수): 수정 후 상품 제목 / 예시: 업소용 냉장고<br>
                             **businessCategory** (필수): 업종 카테고리 / 예시: KOREAN_MEAL<br>
                             **productCategory** (필수): 품목 카테고리 / 예시: REFRIGERATOR_FREEZER<br>
-                            **price** (필수): 수정 후 가격 / 예시: 300000<br>
+                            **price** (필수): 수정 후 가격(0원은 나눔) / 예시: 300000<br>
                             **tradeMethods** (필수): 거래 방식 배열 / 예시: [DIRECT, DELIVERY]<br>
                             **tradeLocation**: 직거래 장소 / 예시: 서울특별시 중구 명동<br>
                             **latitude**: 직거래 장소 위도 / 예시: 37.5665<br>
